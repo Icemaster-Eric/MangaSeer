@@ -2,48 +2,38 @@ from PySide6 import QtWidgets, QtCore
 
 
 class Popup(QtWidgets.QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QtWidgets.QWidget = None):
+        super().__init__(parent)
 
         layout = QtWidgets.QHBoxLayout()
 
-        label = QtWidgets.QLabel("kawaii little popup")
-        label.move(50, 50)
-
-        layout.addWidget(label)
+        layout.addWidget(QtWidgets.QLabel("ayaya"))
 
         self.setLayout(layout)
+
+        self.setStyleSheet("QWidget { background-color : green}") # debugging
+        self.setGeometry(100, 100, self.sizeHint().width(), self.sizeHint().height())
+        self.setFixedSize(100, 100)
+
+        self.show()
 
 
 class Overlay(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setGeometry(0, 0, 100, 100)
-
-        layout = QtWidgets.QVBoxLayout()
-
         # NOTE: choose a better name than "popup"
         self.popups = [
-            Popup()
+            Popup(self)
         ]
-        for popup in self.popups:
-            layout.addWidget(popup)
-
-        self.setLayout(layout)
-
-
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
-        self.setCentralWidget(Overlay())
+
         self.showMaximized()
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication()
-    window = MainWindow()
+    overlay = Overlay()
     app.exec()
