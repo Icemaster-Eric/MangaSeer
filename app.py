@@ -1,8 +1,10 @@
 from PySide6 import QtWidgets, QtCore
+from ultralytics import YOLOv10
+from PIL import ImageGrab
 
 
 class Popup(QtWidgets.QWidget):
-    def __init__(self, bbox: tuple[int, int, int, int], parent: QtWidgets.QWidget):
+    def __init__(self, bbox: list[int, int, int, int], parent: QtWidgets.QWidget):
         super().__init__(parent)
 
         layout = QtWidgets.QHBoxLayout()
@@ -13,7 +15,12 @@ class Popup(QtWidgets.QWidget):
 
         self.setStyleSheet("QWidget { border : 3px solid red}")
         #self.setGeometry(0, 0, self.sizeHint().width(), self.sizeHint().height())
-        self.setGeometry(*bbox)
+        self.setGeometry(
+            bbox[0] - bbox[2] / 2,
+            bbox[1] - bbox[3] / 2,
+            bbox[2],
+            bbox[3]
+        )
         self.show()
 
     def mousePressEvent(self, event):
@@ -24,15 +31,41 @@ class Overlay(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.model = YOLOv10("models/2.pt")
+        self.popups: list[Popup] = []
+
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        # NOTE: choose a better name than "popup"
-        self.popups = [
-            Popup((100, 100, 200, 200), self)
-        ]
-
         self.move(0, 0)
+        self.showMaximized()
+
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(3000)
+        self.timer.timeout.connect(self.scan_screen)
+        self.timer.start()
+
+    def scan_screen(self):
+        # rename this function because the name sounds kinda stupid rn
+        for popup in self.popups:
+            popup.deleteLater()
+        self.popups.clear()
+
+        self.hide()
+
+        snapshot = ImageGrab.grab()
+        snapshot.save("img.png")
+
+        self.showMaximized()
+
+        bboxes = self.model(source=snapshot, conf=0.25)[0].boxes
+
+        for bbox in bboxes:
+            self.popups.append(Popup(
+                bbox.xywh.tolist()[0],
+                self
+            ))
+
         self.showMaximized()
 
 

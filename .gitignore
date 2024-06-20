@@ -166,3 +166,4 @@ datasets/*
 weights/*
 runs/*
 *.pt
+models/*
