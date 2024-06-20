@@ -1,0 +1,6 @@
+path: ./datasets
+train: train/images
+val: val/images
+
+names:
+  0: manga text
