@@ -1,8 +1,6 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 from ultralytics import YOLOv10
-from PIL import Image
-import dxcam
-import time
+from utils import screenshot
 
 
 class Popup(QtWidgets.QWidget):
@@ -34,7 +32,6 @@ class Overlay(QtWidgets.QWidget):
         super().__init__()
 
         self.model = YOLOv10("models/2.pt")
-        self.camera = dxcam.create()
         self.popups: list[Popup] = []
         self.bbox = bbox
 
@@ -57,22 +54,15 @@ class Overlay(QtWidgets.QWidget):
     def scan_screen(self):
         # rename this function & make it run in separate thread
         for popup in self.popups:
-            popup.setVisible(False)
             popup.hide()
-            popup.close()
             popup.deleteLater()
 
         self.popups.clear()
 
-        app.processEvents()
+        # change to more universal ss method later
+        ss = screenshot(self.bbox)
 
-        #snapshot = Image.fromarray(self.camera.grab(region=self.bbox))
-        #snapshot.save("ss.png")
-        screen = app.primaryScreen()
-        snapshot = screen.grabWindow(app.primaryScreen().grabWindow(1))
-        snapshot.save("ss.png", "png")
-
-        bboxes = self.model(source="ss.png", conf=0.25)[0].boxes
+        bboxes = self.model(source=ss, conf=0.25, verbose=False)[0].boxes
 
         for bbox in bboxes:
             self.popups.append(Popup(
@@ -83,7 +73,7 @@ class Overlay(QtWidgets.QWidget):
         app.processEvents()
 
 
-class MainWindow(QtWidgets.QWidget): # no need for actual main window widget
+class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
     def __init__(self):
         super().__init__()
 
@@ -116,6 +106,7 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget
             int(event.globalPosition().x()),
             int(event.globalPosition().y())
         ))
+        self.lower()
         self.hide()
 
 
