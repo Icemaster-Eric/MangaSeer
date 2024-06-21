@@ -29,18 +29,24 @@ class Popup(QtWidgets.QWidget):
         print(type(event))
 
 
-class Overlay(QtWidgets.QMainWindow):
+class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
         self.model = YOLOv10("models/2.pt")
         self.camera = dxcam.create()
         self.popups: list[Popup] = []
+        self.bbox = bbox
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.setGeometry(*bbox)
+        self.setGeometry(
+            bbox[0],
+            bbox[1],
+            bbox[2] - bbox[0],
+            bbox[3] - bbox[1]
+        )
         self.show()
 
         self.timer = QtCore.QTimer()
@@ -49,28 +55,32 @@ class Overlay(QtWidgets.QMainWindow):
         self.timer.start()
 
     def scan_screen(self):
-        # rename this function
+        # rename this function & make it run in separate thread
         for popup in self.popups:
+            popup.setVisible(False)
             popup.hide()
-
-        app.processEvents()
-
-        snapshot = Image.fromarray(self.camera.grab())
-
-        for popup in self.popups:
-            popup.show()
+            popup.close()
             popup.deleteLater()
 
         self.popups.clear()
+
         app.processEvents()
 
-        bboxes = self.model(source=snapshot, conf=0.25)[0].boxes
+        #snapshot = Image.fromarray(self.camera.grab(region=self.bbox))
+        #snapshot.save("ss.png")
+        screen = app.primaryScreen()
+        snapshot = screen.grabWindow(app.primaryScreen().grabWindow(1))
+        snapshot.save("ss.png", "png")
+
+        bboxes = self.model(source="ss.png", conf=0.25)[0].boxes
 
         for bbox in bboxes:
             self.popups.append(Popup(
                 bbox.xywh.tolist()[0],
                 self
             ))
+
+        app.processEvents()
 
 
 class MainWindow(QtWidgets.QWidget): # no need for actual main window widget
@@ -79,6 +89,7 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
+        self.setCursor(QtCore.Qt.CursorShape.CrossCursor)
 
         layout = QtWidgets.QVBoxLayout()
 
@@ -101,9 +112,9 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget
 
     def select_region_end(self, event):
         self.overlay = Overlay((
-            self.overlay_x, self.overlay_y,
-            event.globalPosition().x() - self.overlay_x,
-            event.globalPosition().y() - self.overlay_y,
+            int(self.overlay_x), int(self.overlay_y),
+            int(event.globalPosition().x()),
+            int(event.globalPosition().y())
         ))
         self.hide()
 
