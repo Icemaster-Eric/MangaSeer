@@ -13,7 +13,7 @@ class Popup(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-        self.setStyleSheet("QWidget { border: 1px solid red; margin: 0px; padding: 0px }")
+        self.setStyleSheet("QWidget { border: 2px solid red; margin: 0px; padding: 0px }")
         #self.setGeometry(0, 0, self.sizeHint().width(), self.sizeHint().height())
         self.setGeometry(
             bbox[0] - bbox[2] / 2 - 11,

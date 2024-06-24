@@ -1,4 +1,4 @@
-path: ./datasets
+path: ./datasets/yolo
 train: train/images
 val: valid/images
 
