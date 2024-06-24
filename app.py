@@ -9,17 +9,17 @@ class Popup(QtWidgets.QWidget):
 
         layout = QtWidgets.QHBoxLayout()
 
-        layout.addWidget(QtWidgets.QLabel("ayaya"))
+        layout.addWidget(QtWidgets.QLabel(" "))
 
         self.setLayout(layout)
 
-        self.setStyleSheet("QWidget { border: 3px solid red }")
+        self.setStyleSheet("QWidget { border: 1px solid red; margin: 0px; padding: 0px }")
         #self.setGeometry(0, 0, self.sizeHint().width(), self.sizeHint().height())
         self.setGeometry(
-            bbox[0] - bbox[2] / 2,
-            bbox[1] - bbox[3] / 2,
-            bbox[2],
-            bbox[3]
+            bbox[0] - bbox[2] / 2 - 11,
+            bbox[1] - bbox[3] / 2 - 11,
+            bbox[2] + 22,
+            bbox[3] + 22
         )
         self.show()
 
@@ -31,7 +31,7 @@ class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
-        self.model = YOLOv10("models/2.pt")
+        self.model = YOLOv10("models/3.pt")
         self.popups: list[Popup] = []
         self.bbox = bbox
 
@@ -62,7 +62,13 @@ class Overlay(QtWidgets.QWidget):
         # change to more universal ss method later
         ss = screenshot(self.bbox)
 
-        bboxes = self.model(source=ss, conf=0.25, verbose=False)[0].boxes
+        bboxes = self.model(
+            source=ss,
+            conf=0.3,
+            classes=[0, 1],
+            agnostic_nms=True,
+            verbose=False
+        )[0].boxes
 
         for bbox in bboxes:
             self.popups.append(Popup(
@@ -106,7 +112,6 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
             int(event.globalPosition().x()),
             int(event.globalPosition().y())
         ))
-        self.lower()
         self.hide()
 
 

@@ -1,6 +1,8 @@
 path: ./datasets
 train: train/images
-val: val/images
+val: valid/images
 
 names:
-  0: manga text
+  0: clean_text
+  1: messy_text
+  2: text_bubble

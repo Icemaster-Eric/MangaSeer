@@ -33,7 +33,6 @@ def screenshot(bbox) -> Image.Image:
         "RGB",
         (bmpinfo["bmWidth"], bmpinfo["bmHeight"]),
         bmpstr, "raw", "BGRX", 0, 1)
-    im.save("debug.png", "png")
 
     win32gui.DeleteObject(saveBitMap.GetHandle())
     saveDC.DeleteDC()
