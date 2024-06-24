@@ -1,16 +1,14 @@
-import asyncio
 from os import listdir
 from PIL import Image, ImageFont, ImageDraw
 import ujson
-import aiohttp # try out aiohttp for web server?
-from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 
 def get_conv_dataset():
     conv_dataset = []
 
-    for file_name in listdir("datasets/dialogue/conv-json"):
-        with open(f"datasets/dialogue/conv-json/{file_name}", "r", encoding="utf-8") as f:
+    for file_name in listdir("datasets/japanese/conv-json"):
+        with open(f"datasets/japanese/conv-json/{file_name}", "r", encoding="utf-8") as f:
             for dialogue in ujson.load(f):
                 for utterance in dialogue["utterances"]:
                     conv_dataset.append(utterance["utterance"])
@@ -18,62 +16,55 @@ def get_conv_dataset():
     return conv_dataset
 
 
-async def get_kanji_in_page(session, level, page):
-    async with session.get(
-        f"https://kanjikana.com/en/kanji/kanken/{level}/pages/{page}"
-    ) as response:
-        html = await response.text()
-        soup = BeautifulSoup(html, features="html.parser")
-        kanji_list = [
-            elem.find("h3") for elem in soup.find_all("a", class_="linkbox square")
-        ]
+def get_kanji():
+    with open("datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
+        kanji_list = f.readlines()
 
-    return [kanji.get_text() for kanji in kanji_list]
+    return [kanji.strip() for kanji in kanji_list]
 
 
-async def get_kanken_kanji(session, level):
-    tasks = []
+def preprocess_sentence(sentence: str):
+    for i, c in enumerate(sentence.strip()):
+        if c.isnumeric() or c.isspace():
+            continue
+        break
 
-    for page in await get_pages(session, level):
-        tasks.append(get_kanji_in_page(session, level, page))
-
-    results = await asyncio.gather(*tasks)
-
-    return [j for i in results for j in i]
+    return sentence[i:]
 
 
-async def get_pages(session, level) -> range:
-    async with session.get(
-        f"https://kanjikana.com/en/kanji/kanken/{level}"
-    ) as response:
-        html = await response.text()
-        soup = BeautifulSoup(html, features="html.parser")
-        pages = soup.find("a", class_="Pagination_active__3ntIl").get_text()
+def extract_sentences(path):
+    with open(path, "r", encoding="utf-8") as f:
+        sentences = f.readlines()
 
-    return range(int(pages[0]), int(pages.split(" / ")[-1]))
-
-
-async def get_kanji():
-    tasks = []
-
-    async with aiohttp.ClientSession() as session:
-        for level in (10, 9, 8, 7, 6, 5, 4, 3, 2.5, 2, 1.5, 1):
-            tasks.append(get_kanken_kanji(session, level))
-
-        kanji_list = await asyncio.gather(*tasks)
-
-    return [kanji for sub in kanji_list for kanji in sub]
+    return set(tqdm(
+        (preprocess_sentence(sentence) for sentence in sentences),
+        total=100000
+    ))
 
 
-async def main():
-    #conv_dataset = get_conv_dataset()
+def get_news_dataset():
+    with open("datasets/japanese/news_dataset.txt", "r", encoding="utf-8") as f:
+        sentences = f.readlines()
 
-    kanji_list = await get_kanji()
+    return [sentence.strip() for sentence in sentences]
 
-    with open("kanji.txt", "a", encoding="utf-8") as f:
-        for kanji in kanji_list:
-            f.write(f"{kanji}\n")
+
+def main():
+    conv_dataset = get_conv_dataset()
+    news_dataset = get_news_dataset()
+    sentence_dataset = set(conv_dataset + news_dataset)
+    kanji_list = set(get_kanji())
+    missing_kanji = set()
+
+    for kanji in tqdm(kanji_list):
+        for sentence in sentence_dataset:
+            if kanji in sentence:
+                break
+        else:
+            missing_kanji.add(kanji)
+
+    print(f"Kanji Found: {(len(kanji_list) - len(missing_kanji))/len(kanji_list):.2%}")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
