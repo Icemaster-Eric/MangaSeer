@@ -1,9 +1,9 @@
 from os import listdir
-import random
 from PIL import Image, ImageFont, ImageDraw
 import ujson
 from tqdm import tqdm
-import pykakasi
+from pykakasi import kakasi
+from sudachipy import tokenizer, dictionary
 
 
 def get_conv_dataset() -> set:
@@ -51,19 +51,40 @@ def get_news_dataset() -> set:
     return set(sentence.strip() for sentence in sentences)
 
 
-def main():
-    conv_dataset = get_conv_dataset()
-    #news_dataset = get_news_dataset()
-    #dataset = conv_dataset.union(news_dataset)
-    kanji_set = tuple(get_kanji())
+def needs_furigana(text: str, kanji_set: set[str]) -> bool:
+    """Determines whether a string needs furigana or not
 
-    kks = pykakasi.kakasi()
-    text = conv_dataset.pop()
-    result = kks.convert(text)
-    for item in result:
-        print("{}[{}] ".format(item["orig"], item["kana"].capitalize()), end="")
-    print()
+    Args:
+        text (str): Text to be analyzed
+        kanji_set (set[str]): Set of valid kanji characters
+
+    Returns:
+        bool: Whether the string needs furigana or not
+    """
+    return bool(len(kanji_set.intersection(set(text)))) # currently just checks whether there's kanji in the string or not
+
+
+sudachi_dict = dictionary.Dictionary(dict="full").create()
+kks = kakasi()
+kanji_set = get_kanji()
+
+
+def furigana(text):
+    for token in sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.B):
+        print(token.normalized_form(), end="")
+
+        if needs_furigana(token.normalized_form(), kanji_set):
+            print(f"[{kks.convert(token.normalized_form())[0]['hira']}]", end="")
+
+        print(end="-")
+    print("\n")
+
+
+def test():
+    conv_dataset = get_conv_dataset()
+    news_dataset = get_news_dataset()
+    dataset = conv_dataset.union(news_dataset)
 
 
 if __name__ == "__main__":
-    main()
+    test()
