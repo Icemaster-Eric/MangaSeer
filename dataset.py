@@ -4,6 +4,7 @@ import ujson
 from tqdm import tqdm
 from pykakasi import kakasi
 from sudachipy import tokenizer, dictionary
+from utils import Renderer
 
 
 def get_conv_dataset() -> set:
@@ -51,7 +52,7 @@ def get_news_dataset() -> set:
     return set(sentence.strip() for sentence in sentences)
 
 
-def needs_furigana(text: str, kanji_set: set[str]) -> bool:
+def needs_furigana(text: str) -> bool:
     """Determines whether a string needs furigana or not
 
     Args:
@@ -67,23 +68,51 @@ def needs_furigana(text: str, kanji_set: set[str]) -> bool:
 sudachi_dict = dictionary.Dictionary(dict="full").create()
 kks = kakasi()
 kanji_set = get_kanji()
+renderer = Renderer()
 
 
-def furigana(text):
-    for token in sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.B):
-        print(token.normalized_form(), end="")
+def furigana(text: str) -> str:
+    """Furigana-izes text
 
-        if needs_furigana(token.normalized_form(), kanji_set):
-            print(f"[{kks.convert(token.normalized_form())[0]['hira']}]", end="")
+    Args:
+        text (str): the text to be furigana-ized
 
-        print(end="-")
-    print("\n")
+    Returns:
+        str: html string w/ ruby annotations for furigana
+    """
+    output = "<p>"
+
+    for token in sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A): # erm should probs make sure this split mode is optimal
+        token = token.normalized_form()
+
+        if needs_furigana(token):
+            for result in kks.convert(token):
+                original = result["orig"]
+                furigana = result["hira"]
+
+                if not needs_furigana(original):
+                    continue
+
+                c = 0
+                while furigana[-1] == original[-1]:
+                    furigana = furigana[:-1]
+                    c += 1
+
+                output += f"<ruby>{original[:len(original)-c]}<rt>{furigana}</rt></ruby>{token[len(original)-c:]}"
+
+        else:
+            output += token
+
+    output += "</p>"
+
+    return output
 
 
 def test():
     conv_dataset = get_conv_dataset()
-    news_dataset = get_news_dataset()
-    dataset = conv_dataset.union(news_dataset)
+    #news_dataset = get_news_dataset()
+    #dataset = conv_dataset.union(news_dataset)
+    print(furigana(conv_dataset.pop()))
 
 
 if __name__ == "__main__":
