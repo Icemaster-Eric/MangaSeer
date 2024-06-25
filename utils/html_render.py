@@ -1,36 +1,22 @@
+from uuid import uuid4
+from os import remove
 from html2image import Html2Image
-
-
-hti = Html2Image("edge", size=(500, 500), custom_flags=["--no-sandbox"])
-
-css_str = """
-@font-face {
-    font-family: "GenEiPOP";
-    src: url("E:/Code/MangaSeer/datasets/fonts/GenEiPOPlePw-Bk.ttf");
-}
-body {
-    background-color: black;
-}
-p {
-    font-family: "GenEiPOP";
-    font-size: 48px;
-    color: black;
-    -webkit-text-stroke: 2px white;
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-}
-"""
-
-hti.screenshot(
-    html_str="<body><p><ruby>今<rt>いま</rt></ruby>まで<ruby>一人<rt>ひとり</rt></ruby>で<ruby>来<rt>く</rt></ruby>るたことは<ruby>有<rt>あ</rt></ruby>るますずが、<ruby>私<rt>わたし</rt></ruby>の<ruby>家<rt>いえ</rt></ruby>までの<ruby>交通<rt>こうつう</rt></ruby><ruby>手段<rt>しゅだん</rt></ruby>は<ruby>分<rt>わ</rt></ruby>かるますか?</p></body>",
-    css_str=css_str, save_as="ss.png"
-)
+from PIL import Image
 
 
 class Renderer:
     def __init__(self):
-        self.hti = Html2Image("edge", size=(500, 500), custom_flags=["--no-sandbox"])
+        self.hti = Html2Image("edge", size=(640, 640), custom_flags=["--no-sandbox"], output_path="rendered_images")
+        self.css_str = "@font-face{font-family:'customFont';src:url('%s');}body{background-color:black;}p{font-family:'customFont';font-size:24px;color:black;-webkit-text-stroke:1px white;writing-mode:vertical-rl;text-orientation:upright;}"
 
-    def render(html):
-        # calculate bounding box of rendered html and crop it using Pillow as postprocessing step (`getbbox` function)
-        pass
+    def render(self, html: str, font_path: str) -> None:
+        ssid = uuid4().hex
+        self.hti.screenshot(html_str=html, css_str=self.css_str % font_path, save_as=f"{ssid}.png")
+        image = Image.open(f"rendered_images/{ssid}.png")
+        image.crop(image.getbbox()).save(f"rendered_images/{ssid}.jpg", format="jpeg")
+        remove(f"rendered_images/{ssid}.png")
+
+
+if __name__ == "__main__":
+    renderer = Renderer()
+    renderer.render("<p><ruby>其<rt>その</rt></ruby>れは<ruby>名案<rt>めいあん</rt></ruby>ですね。<ruby>口コミ<rt>くちこみ</rt></ruby>サイトで<ruby>調<rt>しら</rt></ruby>べるて<ruby>友達<rt>ともだち</rt></ruby>と<ruby>相談<rt>そうだん</rt></ruby><ruby>為<rt>す</rt></ruby>るたいと<ruby>思<rt>おも</rt></ruby>うます。<ruby>比較<rt>ひかく</rt></ruby><ruby>的<rt>てき</rt></ruby><ruby>手頃<rt>てごろ</rt></ruby>だ<ruby>価格<rt>かかく</rt></ruby>で、<ruby>料理<rt>りょうり</rt></ruby>が<ruby>美味し<rt>おいし</rt></ruby>い<ruby>御<rt>お</rt></ruby><ruby>店<rt>みせ</rt></ruby>が<ruby>見付か<rt>みつか</rt></ruby>ると<ruby>良<rt>よ</rt></ruby>いのですが。</p>", "datasets/fonts/GenEiLateGoN_v2.ttf")
