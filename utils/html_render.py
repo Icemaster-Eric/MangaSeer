@@ -1,7 +1,7 @@
 from uuid import uuid4
 from os import remove, listdir
 from html2image import Html2Image
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 class Renderer:
@@ -16,7 +16,7 @@ class Renderer:
             "{font-family:'customFont';"
             "font-size:%spx;"
             "color:%s;"
-            "-webkit-text-stroke:%spx %s;"
+            "-webkit-text-stroke:%s;"
             "writing-mode:%s;" # vertical-rl
             "text-orientation:upright;}"
         )
@@ -24,8 +24,18 @@ class Renderer:
     def render(self, html: str, options: tuple[str, str, str, str, str, str, str]) -> None:
         ssid = uuid4().hex
         self.hti.screenshot(html_str=html, css_str=self.css_str % options, save_as=f"{ssid}.png")
+
         image = Image.open(f"rendered_images/{ssid}.png")
-        image.crop(image.getbbox()).save(f"rendered_images/{ssid}.jpg", format="jpeg")
+
+        if options[1] == "white":
+            bbox = image.getbbox()
+        elif options[1] == "black" and options[1] == "white":
+            bbox = ImageOps.invert(image).getbbox()
+        else:
+            pass
+
+        image.crop(bbox).save(f"rendered_images/{ssid}.jpg", format="jpeg")
+
         remove(f"rendered_images/{ssid}.png")
 
 
@@ -36,10 +46,10 @@ if __name__ == "__main__":
 
     for font in fonts:
         for font_size in (12, 15, 18, 21):
-            presets.append((font, "white", font_size, "black", "vertical-rl"))
-            presets.append((font, "white", font_size, "black", "vertical-rl"))
-            presets.append((font, "white", font_size, "black", "vertical-rl"))
-            presets.append((font, "white", font_size, "black", "vertical-rl"))
+            presets.append((font, "white", font_size, "black", "0", "vertical-rl"))
+            presets.append((font, "black", font_size, "black", "1px white", "vertical-rl"))
+            presets.append((font, "white", font_size, "black", "0", "vertical-rl"))
+            presets.append((font, "black", font_size, "black", "1px white", "vertical-rl"))
         # white bg with black text
         # picture bg with white outlined black text
         # different font sizes
