@@ -1,5 +1,4 @@
 from os import listdir
-from PIL import Image, ImageFont, ImageDraw
 import ujson
 from tqdm import tqdm
 from pykakasi import kakasi
@@ -117,3 +116,13 @@ def test():
 
 if __name__ == "__main__":
     test()
+    """import random
+    with open("datasets/japanese/news_dataset.txt", "r", encoding="utf-8") as f:
+        dataset = f.readlines()
+    
+    with open("datasets/japanese/news_dataset_filtered.txt", "a", encoding="utf-8") as f:
+        for sentence in dataset:
+            if len(sentence) < 30:
+                f.write(sentence)
+            elif random.randint(1, 2) == 1:
+                f.write(sentence)"""

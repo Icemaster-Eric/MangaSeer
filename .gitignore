@@ -167,3 +167,4 @@ weights/*
 runs/*
 *.pt
 models/*
+rendered_images/*
