@@ -1,4 +1,5 @@
 from uuid import uuid4
+from random import choice, randint
 from os import remove, listdir
 from html2image import Html2Image
 from PIL import Image, ImageOps
@@ -11,14 +12,25 @@ class Renderer:
             "@font-face"
             "{font-family:'customFont';src:url('%s');}"
             "body"
-            "{ background:%s;}"
+            "{ background:black;}"
             "p"
             "{font-family:'customFont';"
             "font-size:%spx;"
+            "font-weight:%s;"
             "color:%s;"
             "-webkit-text-stroke:%s;"
+            "border:1px solid red;"
             "writing-mode:%s;" # vertical-rl
-            "text-orientation:upright;}"
+            "text-orientation:upright;"
+            "background:%s;"
+            "padding:%s;"
+            "width:%s;"
+            "height:%s;}"
+        )
+        self.fonts = [f"E:/Code/MangaSeer/datasets/fonts/{font}" for font in listdir("datasets/fonts")]
+        self.styles = (
+            ("black", "0", "white"),
+            ("white", "2px black", "white")
         )
 
     def render(self, html: str, options: tuple[str, str, str, str, str, str, str]) -> None:
@@ -26,36 +38,35 @@ class Renderer:
         self.hti.screenshot(html_str=html, css_str=self.css_str % options, save_as=f"{ssid}.png")
 
         image = Image.open(f"rendered_images/{ssid}.png")
-
-        if options[1] == "white":
-            bbox = image.getbbox()
-        elif options[1] == "black" and options[1] == "white":
-            bbox = ImageOps.invert(image).getbbox()
-        else:
-            pass
-
+        bbox = image.getbbox()
+        bbox = (bbox[0] + 1, bbox[1] + 1, bbox[2] - 1, bbox[3] - 1)
         image.crop(bbox).save(f"rendered_images/{ssid}.jpg", format="jpeg")
 
         remove(f"rendered_images/{ssid}.png")
 
+    def get_preset(self) -> tuple[str]:
+        """Returns a random preset for a render
+
+        Returns:
+            tuple[str]: A valid preset for the `options` parameter of `Renderer.render`
+        """
+        font = choice(self.fonts)
+        style = choice(self.styles)
+        writing_mode = "vertical-rl"
+        padding = f"{randint(1,7)}px {randint(1,7)}px {randint(1,7)}px {randint(1,7)}px"
+        width = "auto"
+        height = f"{randint(300, 600)}px"
+
+        return font, *style, writing_mode, padding, width, height
+
 
 if __name__ == "__main__":
+    for file_name in listdir("rendered_images"):
+        remove(f"rendered_images/{file_name}")
+
     renderer = Renderer()
-    presets = []
-    fonts = [f"datasets/fonts/{font}" for font in listdir("datasets/fonts")]
 
-    for font in fonts:
-        for font_size in (12, 15, 18, 21):
-            presets.append((font, "white", font_size, "black", "0", "vertical-rl"))
-            presets.append((font, "black", font_size, "black", "1px white", "vertical-rl"))
-            presets.append((font, "white", font_size, "black", "0", "vertical-rl"))
-            presets.append((font, "black", font_size, "black", "1px white", "vertical-rl"))
-        # white bg with black text
-        # picture bg with white outlined black text
-        # different font sizes
-        # vertical/horizontal text
-
-    for preset in presets:
+    for _ in range(10):
         renderer.render(
             (
                 "<p><ruby>其<rt>その</rt></ruby>れは<ruby>名案<rt>めいあん</rt></ruby>ですね。"
@@ -68,5 +79,5 @@ if __name__ == "__main__":
                 "<ruby>御<rt>お</rt></ruby><ruby>店<rt>みせ</rt></ruby>が"
                 "<ruby>見付か<rt>みつか</rt></ruby>ると<ruby>良<rt>よ</rt></ruby>いのですが。</p>"
             ),
-            preset
+            renderer.get_preset()
         )
