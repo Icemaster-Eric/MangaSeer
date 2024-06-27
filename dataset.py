@@ -118,13 +118,17 @@ def furigana(text: str, random=False) -> str:
 
 def generate_dataset():
     renderer = Renderer()
-    conv_dataset = [furigana(sentence, random=True) for sentence in get_conv_dataset()]
+    conv_dataset = [(sentence.replace("\n", ""), furigana(sentence.replace("\n", ""), random=True)) for sentence in get_conv_dataset()][:10000]
     #news_dataset = get_news_dataset()
     #dataset = conv_dataset.union(news_dataset)
-    pool = Pool(4)
+    pool = Pool(processes=3)
     pool.map(renderer.render, conv_dataset)
 
 
 if __name__ == "__main__":
     #generate_dataset()
-    pass
+    with open("images.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    image_text_pairs = {line.strip().split("|", 1)[0]:line.strip().split("|", 1)[1] for line in lines}
+    with open("sentences.json", "w", encoding="utf-8") as f:
+        ujson.dump(image_text_pairs, f)

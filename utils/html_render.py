@@ -35,9 +35,11 @@ class Renderer:
             (25, 400, "black", "0", "white"),
         )
 
-    def render(self, html: str, options: tuple[str, str, str, str, str, str, str] = None) -> None:
+    def render(self, html: tuple[str, str], options: tuple[str, str, str, str, str, str, str] = None) -> None:
         if not options:
             options = self.get_preset()
+
+        sentence, html = html
 
         ssid = uuid4().hex
         self.hti.screenshot(html_str=html, css_str=self.css_str % options, save_as=f"{ssid}.png")
@@ -48,6 +50,9 @@ class Renderer:
         image.crop(bbox).save(f"rendered_images/{ssid}.jpg", format="jpeg")
 
         remove(f"rendered_images/{ssid}.png")
+
+        with open("images.txt", "a", encoding="utf-8") as f:
+            f.write(f"{ssid}.jpg|{sentence}\n")
 
     def get_preset(self) -> tuple[str]:
         """Returns a random preset for a render
@@ -66,7 +71,7 @@ class Renderer:
 
 
 if __name__ == "__main__":
-    for file_name in listdir("rendered_images"):
+    """for file_name in listdir("rendered_images"):
         remove(f"rendered_images/{file_name}")
 
     renderer = Renderer()
@@ -85,4 +90,5 @@ if __name__ == "__main__":
                 "<ruby>見付か<rt>みつか</rt></ruby>ると<ruby>良<rt>よ</rt></ruby>いのですが。</p>"
             ),
             renderer.get_preset()
-        )
+        )"""
+    pass
