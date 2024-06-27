@@ -126,9 +126,21 @@ def generate_dataset():
 
 
 if __name__ == "__main__":
+    with open("datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
+        sentences = ujson.load(f)
+    print(max(len(sentence) for sentence in sentences.values()))
     #generate_dataset()
-    with open("images.txt", "r", encoding="utf-8") as f:
+    """with open("images.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     image_text_pairs = {line.strip().split("|", 1)[0]:line.strip().split("|", 1)[1] for line in lines}
     with open("sentences.json", "w", encoding="utf-8") as f:
-        ujson.dump(image_text_pairs, f)
+        ujson.dump(image_text_pairs, f)"""
+    """from PIL import Image
+
+    with open("datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
+        sentences = ujson.load(f)
+    
+    for image, sentence in list(sentences.items())[:7500]:
+        Image.open(f"rendered_images/{image}").save(f"datasets/ocr/clean_10k/train/{image}")
+    for image, sentence in list(sentences.items())[7500:]:
+        Image.open(f"rendered_images/{image}").save(f"datasets/ocr/clean_10k/valid/{image}")"""

@@ -1,46 +1,68 @@
+from os import listdir
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
-from transformers import TrOCRProcessor
+from transformers import ViTFeatureExtractor, AutoTokenizer, PreTrainedTokenizer
+import ujson
 
 
 class ImageDataset(Dataset):
-    def __init__(self, root_dir, df, processor, max_target_length=128):
-        self.root_dir = root_dir
-        self.df = df
+    def __init__(
+            self,
+            images_path: str,
+            image_text_pairs: dict[str, str],
+            processor: ViTFeatureExtractor,
+            tokenizer: PreTrainedTokenizer,
+            max_target_length: int = 256
+        ):
+        self.images_path = images_path
+        self.image_text_pairs = [(image, image_text_pairs[image]) for image in listdir(images_path)]
         self.processor = processor
+        self.tokenizer = tokenizer
         self.max_target_length = max_target_length
 
     def __len__(self):
-        return len(self.df)
+        return len(self.image_text_pairs)
 
-    def __getitem__(self, idx):
-        # get file name + text 
-        file_name = self.df['file_name'][idx]
-        text = self.df['text'][idx]
+    def __getitem__(self, idx: int):
+        file_name, text = self.image_text_pairs[idx]
         # prepare image (i.e. resize + normalize)
-        image = Image.open(self.root_dir + file_name).convert("RGB")
+        image = Image.open(f"{self.image_path}/{file_name}")
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
         # add labels (input_ids) by encoding the text
-        labels = self.processor.tokenizer(
-            text, 
-            padding="max_length", 
+        labels = self.tokenizer(
+            text,
+            padding="max_length",
             max_length=self.max_target_length
         ).input_ids
         # important: make sure that PAD tokens are ignored by the loss function
         labels = [label if label != self.processor.tokenizer.pad_token_id else -100 for label in labels]
 
-        encoding = {"pixel_values": pixel_values.squeeze(), "labels": torch.tensor(labels)}
-        return encoding
+        return {
+            "pixel_values": pixel_values.squeeze(),
+            "labels": torch.tensor(labels)
+        } # the encoding
 
 
-processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
-train_dataset = ImageDataset(
-    root_dir="",
-    df=train_df,
-    processor=processor)
-eval_dataset = ImageDataset(
-    root_dir="",
-    df=test_df,
-    processor=processor
-)
+if __name__ == "__main__":
+    with open("datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
+        image_text_pairs = ujson.load(f)
+
+    processor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+    tokenizer = AutoTokenizer.from_pretrained("tohoku-nlp/bert-base-japanese-v3")
+
+    train_dataset = ImageDataset(
+        "datasets/ocr/clean_10k/train",
+        image_text_pairs,
+        processor,
+        tokenizer
+    )
+    validation_dataset = ImageDataset(
+        "datasets/ocr/clean_10k/valid",
+        image_text_pairs,
+        processor,
+        tokenizer
+    )
+
+    print("Number of training examples:", len(train_dataset))
+    print("Number of validation examples:", len(validation_dataset))
