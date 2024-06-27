@@ -11,8 +11,8 @@ from utils import Renderer
 def get_conv_dataset() -> set:
     conv_dataset = set()
 
-    for file_name in listdir("datasets/japanese/conv-json"):
-        with open(f"datasets/japanese/conv-json/{file_name}", "r", encoding="utf-8") as f:
+    for file_name in listdir("manga_datasets/japanese/conv-json"):
+        with open(f"manga_datasets/japanese/conv-json/{file_name}", "r", encoding="utf-8") as f:
             for dialogue in ujson.load(f):
                 for utterance in dialogue["utterances"]:
                     conv_dataset.add(utterance["utterance"])
@@ -21,7 +21,7 @@ def get_conv_dataset() -> set:
 
 
 def get_kanji() -> set:
-    with open("datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
+    with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
         kanji_list = f.readlines()
 
     return set(kanji.strip() for kanji in kanji_list)
@@ -47,7 +47,7 @@ def extract_sentences(path) -> set:
 
 
 def get_news_dataset() -> set:
-    with open("datasets/japanese/news_dataset.txt", "r", encoding="utf-8") as f:
+    with open("manga_datasets/japanese/news_dataset.txt", "r", encoding="utf-8") as f:
         sentences = f.readlines()
 
     return set(sentence.strip() for sentence in sentences)
@@ -126,7 +126,7 @@ def generate_dataset():
 
 
 if __name__ == "__main__":
-    with open("datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
+    with open("manga_datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
         sentences = ujson.load(f)
     print(max(len(sentence) for sentence in sentences.values()))
     #generate_dataset()
@@ -137,10 +137,10 @@ if __name__ == "__main__":
         ujson.dump(image_text_pairs, f)"""
     """from PIL import Image
 
-    with open("datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
+    with open("manga_datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
         sentences = ujson.load(f)
     
     for image, sentence in list(sentences.items())[:7500]:
-        Image.open(f"rendered_images/{image}").save(f"datasets/ocr/clean_10k/train/{image}")
+        Image.open(f"rendered_images/{image}").save(f"manga_datasets/ocr/clean_10k/train/{image}")
     for image, sentence in list(sentences.items())[7500:]:
-        Image.open(f"rendered_images/{image}").save(f"datasets/ocr/clean_10k/valid/{image}")"""
+        Image.open(f"rendered_images/{image}").save(f"manga_datasets/ocr/clean_10k/valid/{image}")"""

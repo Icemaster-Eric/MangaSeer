@@ -162,7 +162,7 @@ cython_debug/
 #.idea/
 
 # project-specific stuff
-datasets/*
+manga_datasets/*
 weights/*
 runs/*
 *.pt

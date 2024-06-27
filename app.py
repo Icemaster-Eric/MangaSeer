@@ -31,7 +31,7 @@ class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
-        self.model = YOLOv10("models/3.pt")
+        self.model = YOLOv10("models/yolo/yolov10l.pt")
         self.popups: list[Popup] = []
         self.bbox = bbox
 
