@@ -2,7 +2,7 @@ from uuid import uuid4
 from random import choice, randint
 from os import remove, listdir
 from html2image import Html2Image
-from PIL import Image, ImageOps
+from PIL import Image
 
 
 class Renderer:
@@ -20,20 +20,25 @@ class Renderer:
             "color:%s;"
             "-webkit-text-stroke:%s;"
             "border:1px solid red;"
-            "writing-mode:%s;" # vertical-rl
             "text-orientation:upright;"
             "background:%s;"
+            "writing-mode:%s;" # vertical-rl
             "padding:%s;"
             "width:%s;"
-            "height:%s;}"
+            "max-height:%s;}"
         )
         self.fonts = [f"E:/Code/MangaSeer/datasets/fonts/{font}" for font in listdir("datasets/fonts")]
         self.styles = (
-            ("black", "0", "white"),
-            ("white", "2px black", "white")
+            (16, 400, "black", "0", "white"),
+            (19, 400, "black", "0", "white"),
+            (22, 400, "black", "0", "white"),
+            (25, 400, "black", "0", "white"),
         )
 
-    def render(self, html: str, options: tuple[str, str, str, str, str, str, str]) -> None:
+    def render(self, html: str, options: tuple[str, str, str, str, str, str, str] = None) -> None:
+        if not options:
+            options = self.get_preset()
+
         ssid = uuid4().hex
         self.hti.screenshot(html_str=html, css_str=self.css_str % options, save_as=f"{ssid}.png")
 
@@ -53,9 +58,9 @@ class Renderer:
         font = choice(self.fonts)
         style = choice(self.styles)
         writing_mode = "vertical-rl"
-        padding = f"{randint(1,7)}px {randint(1,7)}px {randint(1,7)}px {randint(1,7)}px"
+        padding = f"{randint(1, 10)}px {randint(8, 18)}px 0px {randint(1, 10)}px"
         width = "auto"
-        height = f"{randint(300, 600)}px"
+        height = f"{randint(200, 600)}px"
 
         return font, *style, writing_mode, padding, width, height
 

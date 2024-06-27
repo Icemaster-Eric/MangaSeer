@@ -1,4 +1,6 @@
 from os import listdir
+from random import randint
+from multiprocessing import Pool
 import ujson
 from tqdm import tqdm
 from pykakasi import kakasi
@@ -67,22 +69,27 @@ def needs_furigana(text: str) -> bool:
 sudachi_dict = dictionary.Dictionary(dict="full").create()
 kks = kakasi()
 kanji_set = get_kanji()
-renderer = Renderer()
 
 
-def furigana(text: str) -> str:
+def furigana(text: str, random=False) -> str:
     """Furigana-izes text
 
     Args:
-        text (str): the text to be furigana-ized
+        text (str): Text to be furigana-ized
+        random (bool, optional): Randomly decide (coin toss) whether to apply furigana. Defaults to False.
 
     Returns:
-        str: html string w/ ruby annotations for furigana
+        str: Html string w/ ruby annotations for furigana
     """
     output = "<p>"
 
     for token in sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A): # erm should probs make sure this split mode is optimal
         token = token.normalized_form()
+
+        if random:
+            if randint(0, 1):
+                output += token
+                continue
 
         if needs_furigana(token):
             for result in kks.convert(token):
@@ -93,8 +100,10 @@ def furigana(text: str) -> str:
                     continue
 
                 c = 0
-                while furigana[-1] == original[-1]:
+                _original = original
+                while furigana[-1] == _original[-1]:
                     furigana = furigana[:-1]
+                    _original = _original[:-1]
                     c += 1
 
                 output += f"<ruby>{original[:len(original)-c]}<rt>{furigana}</rt></ruby>{token[len(original)-c:]}"
@@ -107,15 +116,17 @@ def furigana(text: str) -> str:
     return output
 
 
-def test():
-    conv_dataset = get_conv_dataset()
+def generate_dataset():
+    renderer = Renderer()
+    conv_dataset = [furigana(sentence, random=True) for sentence in get_conv_dataset()]
     #news_dataset = get_news_dataset()
     #dataset = conv_dataset.union(news_dataset)
-    print(furigana(conv_dataset.pop()))
+    pool = Pool(4)
+    pool.map(renderer.render, conv_dataset)
 
 
 if __name__ == "__main__":
-    test()
+    generate_dataset()
     """import random
     with open("datasets/japanese/news_dataset.txt", "r", encoding="utf-8") as f:
         dataset = f.readlines()
