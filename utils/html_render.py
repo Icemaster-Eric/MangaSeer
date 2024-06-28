@@ -51,8 +51,7 @@ class Renderer:
 
         remove(f"rendered_images/{ssid}.png")
 
-        with open("images.txt", "a", encoding="utf-8") as f:
-            f.write(f"{ssid}.jpg|{sentence}\n")
+        return sentence, f"{ssid}.jpg"
 
     def get_preset(self) -> tuple[str]:
         """Returns a random preset for a render

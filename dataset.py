@@ -1,6 +1,6 @@
 from os import listdir
 from random import randint
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 import ujson
 from tqdm import tqdm
 from pykakasi import kakasi
@@ -122,15 +122,20 @@ def furigana(text: str, random=False) -> tuple[str, str]:
 
 def generate_dataset():
     renderer = Renderer()
-    conv_dataset = [furigana(sentence.replace("\n", ""), random=True) for sentence in get_conv_dataset()][:10000]
+    conv_dataset = [furigana(sentence.replace("\n", ""), random=True) for sentence in get_conv_dataset()][:20000]
     #news_dataset = get_news_dataset()
     #dataset = conv_dataset.union(news_dataset)
-    pool = Pool(processes=3)
-    pool.map(renderer.render, conv_dataset)
+    with ThreadPool(processes=5) as pool:
+        results = pool.map(renderer.render, conv_dataset)
+
+    results = {v:k for k, v in results}
+
+    with open("sentences.json", "w", encoding="utf-8") as f:
+        ujson.dump(results, f)
 
 
 if __name__ == "__main__":
-    generate_dataset()
+    #generate_dataset()
     """with open("images.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     image_text_pairs = {line.strip().split("|", 1)[0]:line.strip().split("|", 1)[1] for line in lines}
@@ -141,7 +146,7 @@ if __name__ == "__main__":
     with open("manga_datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
         sentences = ujson.load(f)
 
-    for image, sentence in list(sentences.items())[:7500]:
+    for image, sentence in list(sentences.items())[:16000]:
         Image.open(f"rendered_images/{image}").save(f"manga_datasets/ocr/clean_10k/train/{image}")
-    for image, sentence in list(sentences.items())[7500:]:
+    for image, sentence in list(sentences.items())[16000:]:
         Image.open(f"rendered_images/{image}").save(f"manga_datasets/ocr/clean_10k/valid/{image}")"""
