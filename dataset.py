@@ -71,7 +71,7 @@ kks = kakasi()
 kanji_set = get_kanji()
 
 
-def furigana(text: str, random=False) -> str:
+def furigana(text: str, random=False) -> tuple[str, str]:
     """Furigana-izes text
 
     Args:
@@ -79,16 +79,18 @@ def furigana(text: str, random=False) -> str:
         random (bool, optional): Randomly decide (coin toss) whether to apply furigana. Defaults to False.
 
     Returns:
-        str: Html string w/ ruby annotations for furigana
+        tuple[str, str]: modified text, html string w/ ruby annotations for furigana
     """
-    output = "<p>"
+    raw = ""
+    html = "<p>"
 
     for token in sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A): # erm should probs make sure this split mode is optimal
         token = token.normalized_form()
 
         if random:
             if randint(0, 1):
-                output += token
+                html += token
+                raw += token
                 continue
 
         if needs_furigana(token):
@@ -106,19 +108,21 @@ def furigana(text: str, random=False) -> str:
                     _original = _original[:-1]
                     c += 1
 
-                output += f"<ruby>{original[:len(original)-c]}<rt>{furigana}</rt></ruby>{token[len(original)-c:]}"
+                html += f"<ruby>{original[:len(original)-c]}<rt>{furigana}</rt></ruby>{token[len(original)-c:]}"
+                raw += original[:len(original)-c] + token[len(original)-c:]
 
         else:
-            output += token
+            html += token
+            raw += token
 
-    output += "</p>"
+    html += "</p>"
 
-    return output
+    return raw, html
 
 
 def generate_dataset():
     renderer = Renderer()
-    conv_dataset = [(sentence.replace("\n", ""), furigana(sentence.replace("\n", ""), random=True)) for sentence in get_conv_dataset()][:10000]
+    conv_dataset = [furigana(sentence.replace("\n", ""), random=True) for sentence in get_conv_dataset()][:10000]
     #news_dataset = get_news_dataset()
     #dataset = conv_dataset.union(news_dataset)
     pool = Pool(processes=3)
@@ -126,10 +130,7 @@ def generate_dataset():
 
 
 if __name__ == "__main__":
-    with open("manga_datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
-        sentences = ujson.load(f)
-    print(max(len(sentence) for sentence in sentences.values()))
-    #generate_dataset()
+    generate_dataset()
     """with open("images.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     image_text_pairs = {line.strip().split("|", 1)[0]:line.strip().split("|", 1)[1] for line in lines}
@@ -139,7 +140,7 @@ if __name__ == "__main__":
 
     with open("manga_datasets/ocr/clean_10k/sentences.json", "r", encoding="utf-8") as f:
         sentences = ujson.load(f)
-    
+
     for image, sentence in list(sentences.items())[:7500]:
         Image.open(f"rendered_images/{image}").save(f"manga_datasets/ocr/clean_10k/train/{image}")
     for image, sentence in list(sentences.items())[7500:]:

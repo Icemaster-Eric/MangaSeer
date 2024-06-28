@@ -27,7 +27,7 @@ class Renderer:
             "width:%s;"
             "max-height:%s;}"
         )
-        self.fonts = [f"E:/Code/MangaSeer/datasets/fonts/{font}" for font in listdir("datasets/fonts")]
+        self.fonts = [f"E:/Code/MangaSeer/manga_datasets/fonts/{font}" for font in listdir("manga_datasets/fonts")]
         self.styles = (
             (16, 400, "black", "0", "white"),
             (19, 400, "black", "0", "white"),

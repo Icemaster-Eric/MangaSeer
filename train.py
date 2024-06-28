@@ -4,7 +4,6 @@ from torch.utils.data import Dataset
 from PIL import Image
 from transformers import (
     ViTImageProcessor,
-    ViTFeatureExtractor,
     AutoTokenizer,
     PreTrainedTokenizer,
     VisionEncoderDecoderModel,
@@ -38,6 +37,7 @@ class ImageDataset(Dataset):
         file_name, text = self.image_text_pairs[idx]
         # prepare image (i.e. resize + normalize)
         image = Image.open(f"{self.images_path}/{file_name}")
+        # NOTE: CONVERT TO BLACK AND WHITE TO SAVE ON INPUTS
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
         # add labels (input_ids) by encoding the text
         labels = self.tokenizer(
@@ -94,6 +94,7 @@ def train():
     model.config.num_beams = 4
 
     training_args = Seq2SeqTrainingArguments(
+        num_train_epochs=20,
         predict_with_generate=True,
         eval_strategy="steps",
         per_device_train_batch_size=32,
@@ -101,12 +102,11 @@ def train():
         fp16=True, 
         output_dir="models/test_ocr/",
         logging_steps=2,
-        save_steps=1000,
-        eval_steps=200,
+        save_steps=500,
+        eval_steps=100
     )
 
     cer_metric = load("cer")
-
     def compute_metrics(pred):
         labels_ids = pred.label_ids
         pred_ids = pred.predictions
@@ -128,8 +128,21 @@ def train():
         eval_dataset=validation_dataset,
         data_collator=default_data_collator
     )
-    trainer.train()
+    trainer.train("models/test_ocr/checkpoint-704")
+
+
+def test():
+    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr/checkpoint-4224")
+    processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
+    tokenizer = AutoTokenizer.from_pretrained("tohoku-nlp/bert-base-japanese-v3")
+
+    pixel_values = processor(Image.open("manga_datasets/ocr/clean_10k/test/c83fd8be22124858a936d7c11231a77d.jpg"), return_tensors="pt").pixel_values
+    print(pixel_values.shape)
+
+    generated_ids = model.generate(pixel_values)
+    generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    print(generated_text)
 
 
 if __name__ == "__main__":
-    train()
+    test()
