@@ -122,10 +122,10 @@ def furigana(text: str, random=False) -> tuple[str, str]:
 
 def generate_dataset():
     renderer = Renderer()
-    conv_dataset = [furigana(sentence.replace("\n", ""), random=True) for sentence in get_conv_dataset()][:20000]
+    conv_dataset = [furigana(sentence.replace("\n", ""), random=True) for sentence in get_conv_dataset()][30000:30010]
     #news_dataset = get_news_dataset()
     #dataset = conv_dataset.union(news_dataset)
-    with ThreadPool(processes=5) as pool:
+    with ThreadPool(processes=2) as pool:
         results = pool.map(renderer.render, conv_dataset)
 
     results = {v:k for k, v in results}
@@ -135,7 +135,7 @@ def generate_dataset():
 
 
 if __name__ == "__main__":
-    #generate_dataset()
+    generate_dataset()
     """with open("images.txt", "r", encoding="utf-8") as f:
         lines = f.readlines()
     image_text_pairs = {line.strip().split("|", 1)[0]:line.strip().split("|", 1)[1] for line in lines}

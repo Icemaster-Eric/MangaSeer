@@ -94,7 +94,7 @@ def train():
     model.config.num_beams = 4
 
     training_args = Seq2SeqTrainingArguments(
-        num_train_epochs=10,
+        num_train_epochs=20,
         predict_with_generate=True,
         eval_strategy="steps",
         per_device_train_batch_size=32,
@@ -128,16 +128,15 @@ def train():
         eval_dataset=validation_dataset,
         data_collator=default_data_collator
     )
-    trainer.train()
+    trainer.train("models/test_ocr/checkpoint-6500")
 
 
 def test():
-    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr/checkpoint-4224")
+    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr/checkpoint-6500")
     processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
     tokenizer = AutoTokenizer.from_pretrained("tohoku-nlp/bert-base-japanese-v3")
 
-    pixel_values = processor(Image.open("manga_datasets/ocr/clean_10k/test/c83fd8be22124858a936d7c11231a77d.jpg"), return_tensors="pt").pixel_values
-    print(pixel_values.shape)
+    pixel_values = processor(Image.open("manga_datasets/ocr/clean_10k/test/f34b29ec44f54050923c48d0de3c5940.jpg"), return_tensors="pt").pixel_values
 
     generated_ids = model.generate(pixel_values)
     generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
