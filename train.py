@@ -40,17 +40,20 @@ class ImageDataset(Dataset):
         # NOTE: CONVERT TO BLACK AND WHITE TO SAVE ON INPUTS
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
         # add labels (input_ids) by encoding the text
-        labels = self.tokenizer(
+        encoding = self.tokenizer(
             text,
             padding="max_length",
             max_length=self.max_target_length
-        ).input_ids
+        )
+        labels = encoding.input_ids
+        attention_mask = encoding.attention_mask
         # important: make sure that PAD tokens are ignored by the loss function
         labels = [label if label != self.tokenizer.pad_token_id else -100 for label in labels]
 
         return {
             "pixel_values": pixel_values.squeeze(),
-            "labels": torch.tensor(labels)
+            "labels": torch.tensor(labels),
+            "attention_mask": attention_mask
         } # the encoding
 
 
@@ -87,10 +90,10 @@ def train():
 
     # set beam search parameters
     model.config.eos_token_id = tokenizer.sep_token_id
-    model.config.max_length = 64
+    model.config.max_length = 256
     model.config.early_stopping = True
     model.config.no_repeat_ngram_size = 3
-    model.config.length_penalty = 2.0
+    model.config.length_penalty = 1.5
     model.config.num_beams = 4
 
     training_args = Seq2SeqTrainingArguments(
@@ -100,8 +103,8 @@ def train():
         per_device_train_batch_size=32,
         per_device_eval_batch_size=32,
         fp16=True, 
-        output_dir="models/test_ocr/",
-        logging_steps=2,
+        output_dir="models/test_ocr_v2/",
+        logging_steps=25,
         save_steps=500,
         eval_steps=200
     )
@@ -128,11 +131,11 @@ def train():
         eval_dataset=validation_dataset,
         data_collator=default_data_collator
     )
-    trainer.train("models/test_ocr/checkpoint-6500")
+    trainer.train("models/test_ocr_v2/checkpoint-4000")
 
 
 def test():
-    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr/checkpoint-6500")
+    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr_v2/checkpoint-4000")
     processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
     tokenizer = AutoTokenizer.from_pretrained("tohoku-nlp/bert-base-japanese-v3")
 
@@ -144,4 +147,4 @@ def test():
 
 
 if __name__ == "__main__":
-    train()
+    test()
