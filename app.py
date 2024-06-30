@@ -1,7 +1,14 @@
 from PySide6 import QtWidgets, QtCore, QtGui
-from ultralytics import YOLOv10
-from manga_ocr import MangaOcr
-from utils import screenshot
+#from ultralytics import YOLOv10
+#from manga_ocr import MangaOcr
+from utils import screenshot, tts
+
+
+class PopupButton(QtWidgets.QPushButton):
+    def __init__(self, icon: str):
+        super().__init__(QtGui.QIcon(icon), "")
+        self.setStyleSheet("QWidget { background-color: gray; }")
+        self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
 
 
 class Popup(QtWidgets.QWidget):
@@ -27,26 +34,20 @@ class Popup(QtWidgets.QWidget):
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setSpacing(0)
 
-        tts_button = QtWidgets.QPushButton(QtGui.QIcon("icons/tts.svg"), "")
-        furigana_button = QtWidgets.QPushButton(QtGui.QIcon("icons/furigana.svg"), "")
-        dictionary_button = QtWidgets.QPushButton(QtGui.QIcon("icons/dictionary.svg"), "")
-        translate_button = QtWidgets.QPushButton(QtGui.QIcon("icons/translate.svg"), "")
+        tts_button = PopupButton("icons/tts.svg")
+        furigana_button = PopupButton("icons/furigana.svg")
+        dictionary_button = PopupButton("icons/dictionary.svg")
+        translate_button = PopupButton("icons/translate.svg")
 
-        tts_button.setStyleSheet("QWidget { background-color: gray; }")
-        furigana_button.setStyleSheet("QWidget { background-color: gray; }")
-        dictionary_button.setStyleSheet("QWidget { background-color: gray; }")
-        translate_button.setStyleSheet("QWidget { background-color: gray; }")
+        tts_button.clicked.connect(lambda x: tts(text))
 
         button_layout.addWidget(tts_button, 0, 0)
         button_layout.addWidget(furigana_button, 1, 0)
-        button_layout.addWidget(dictionary_button, 2, 0)
-        button_layout.addWidget(translate_button, 3, 0)
+        button_layout.addWidget(dictionary_button, 0, 1)
+        button_layout.addWidget(translate_button, 1, 1)
 
         self.button_container.setLayout(button_layout)
         layout.addWidget(self.button_container)
-
-        #QtGui.QIcon("icons/")
-        #layout.addWidget(QtWidgets.QLabel(text))
 
         self.setLayout(layout)
 
@@ -56,25 +57,17 @@ class Popup(QtWidgets.QWidget):
     def enterEvent(self, event):
         self.text_outline.setStyleSheet("QWidget { background-color: rgba(0,0,0,0.01); border: 2px solid royalblue; }")
         self.button_container.setFixedHeight(self.button_container.minimumSizeHint().height())
-        """self.button_layout.addWidget(self.tts_button, 0, 0)
-        self.button_layout.addWidget(self.furigana_button, 1, 0)
-        self.button_layout.addWidget(self.dictionary_button, 0, 1)
-        self.button_layout.addWidget(self.translate_button, 1, 1)"""
 
     def leaveEvent(self, event):
         self.text_outline.setStyleSheet("QWidget { background-color: rgba(0,0,0,0.01); }")
         self.button_container.setFixedHeight(0)
-        """self.button_layout.removeWidget(self.tts_button)
-        self.button_layout.removeWidget(self.furigana_button)
-        self.button_layout.removeWidget(self.dictionary_button)
-        self.button_layout.removeWidget(self.translate_button)"""
 
 class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
-        self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
-        self.ocr_model = MangaOcr()
+        #self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
+        #self.ocr_model = MangaOcr()
         self.popups: list[Popup] = []
         self.bbox = bbox
 
@@ -89,10 +82,10 @@ class Overlay(QtWidgets.QWidget):
         )
         self.show()
 
-        self.timer = QtCore.QTimer()
+        """self.timer = QtCore.QTimer()
         self.timer.setInterval(3000)
         self.timer.timeout.connect(self.scan_screen)
-        self.timer.start()
+        self.timer.start()"""
 
     def scan_screen(self):
         # rename this function & make it run in separate thread
@@ -169,7 +162,11 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication()
-    window = MainWindow()
-    #overlay = Overlay((200, 200, 400, 400))
-    #test_popup = Popup((0, 0, 50, 70), "hello world", overlay)
+    #window = MainWindow()
+    overlay = Overlay((200, 200, 400, 400))
+    test_popup = Popup(
+        (0, 0, 50, 70),
+        "はい。酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
+        overlay
+    )
     app.exec()

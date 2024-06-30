@@ -168,3 +168,4 @@ runs/*
 *.pt
 models/*
 rendered_images/*
+tts_output.mp3
