@@ -1,27 +1,25 @@
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 from ultralytics import YOLOv10
 from manga_ocr import MangaOcr
 from utils import screenshot
-from tqdm import tqdm # temporary for testing speed
+
 
 class Popup(QtWidgets.QWidget):
     def __init__(self, bbox: list[int, int, int, int], text: str, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
-        layout = QtWidgets.QHBoxLayout()
+        self.setMouseTracking(True)
 
+        layout = QtWidgets.QGridLayout()
+
+        #QtGui.QIcon("icons/")
         layout.addWidget(QtWidgets.QLabel(text))
+        self.setStyleSheet("QWidget { color: red; width: 100px; }")
 
         self.setLayout(layout)
 
-        self.setStyleSheet("QWidget { border: 2px solid lightblue; color: red; margin: 0px; padding: 0px }")
-        #self.setGeometry(0, 0, self.sizeHint().width(), self.sizeHint().height())
-        self.setGeometry(*bbox)
+        self.move(bbox[2] + 10, bbox[1])
         self.show()
-
-    def mousePressEvent(self, event):
-        print(type(event))
-
 
 class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
@@ -67,16 +65,17 @@ class Overlay(QtWidgets.QWidget):
             verbose=False
         )[0].boxes
 
-        for bbox in tqdm(bboxes):
+        for bbox in bboxes:
             x, y, w, h = bbox.xywh.tolist()[0]
             w += 22
             h += 22
-            x = x - w / 2
-            y = y - h / 2
-            bbox_image = ss.crop((x, y, x + w, y + h))
+            x1 = x - w / 2
+            y1 = y - h / 2
+            x2, y2 = x1 + w, y1 + h
+            bbox_image = ss.crop((x1, y1, x2, y2))
             text = self.ocr_model(bbox_image)
             self.popups.append(Popup(
-                (x, y, w, h),
+                (x1, y1, x2, y2),
                 text,
                 self
             ))
