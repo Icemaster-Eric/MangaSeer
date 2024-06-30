@@ -4,10 +4,20 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from utils import screenshot, tts
 
 
+class TextEdit(QtWidgets.QInputDialog):
+    def __init__(self, parent: QtWidgets.QWidget, text: str):
+        super().__init__(parent)
+
+        self.setWindowTitle("Edit Text")
+        self.setInputMode(QtWidgets.QInputDialog.InputMode.TextInput)
+        self.setLabelText("Enter text:")
+        self.findChild(QtWidgets.QLineEdit).setText(text)
+
+
 class PopupButton(QtWidgets.QPushButton):
     def __init__(self, icon: str):
         super().__init__(QtGui.QIcon(icon), "")
-        self.setStyleSheet("QWidget { background-color: gray; }")
+        self.setStyleSheet("QPushButton { background-color: rgb(60, 60, 60); } QPushButton:hover { background-color: rgb(52, 52, 52); } QPushButton::pressed { background-color: rgb(35, 35, 35); }")
         self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
 
 
@@ -15,6 +25,7 @@ class Popup(QtWidgets.QWidget):
     def __init__(self, bbox: list[int, int, int, int], text: str, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
+        self.text = text
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -23,7 +34,6 @@ class Popup(QtWidgets.QWidget):
         self.text_outline = QtWidgets.QLabel()
         self.text_outline.setStyleSheet("QWidget { background-color: rgba(0,0,0,0.01); }")
         self.text_outline.setFixedSize(bbox[2] - bbox[0], bbox[3] - bbox[1])
-        self.text_outline.setAttribute(QtCore.Qt.WidgetAttribute.WA_InputMethodTransparent, True)
 
         layout.addWidget(self.text_outline)
 
@@ -34,16 +44,17 @@ class Popup(QtWidgets.QWidget):
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setSpacing(0)
 
+        edit_button = PopupButton("icons/edit.svg")
         tts_button = PopupButton("icons/tts.svg")
-        furigana_button = PopupButton("icons/furigana.svg")
         dictionary_button = PopupButton("icons/dictionary.svg")
         translate_button = PopupButton("icons/translate.svg")
 
-        tts_button.clicked.connect(lambda x: tts(text))
+        edit_button.clicked.connect(self.edit_text)
+        tts_button.clicked.connect(self.tts)
 
-        button_layout.addWidget(tts_button, 0, 0)
-        button_layout.addWidget(furigana_button, 1, 0)
-        button_layout.addWidget(dictionary_button, 0, 1)
+        button_layout.addWidget(edit_button, 0, 0)
+        button_layout.addWidget(tts_button, 0, 1)
+        button_layout.addWidget(dictionary_button, 1, 0)
         button_layout.addWidget(translate_button, 1, 1)
 
         self.button_container.setLayout(button_layout)
@@ -61,6 +72,15 @@ class Popup(QtWidgets.QWidget):
     def leaveEvent(self, event):
         self.text_outline.setStyleSheet("QWidget { background-color: rgba(0,0,0,0.01); }")
         self.button_container.setFixedHeight(0)
+
+    def edit_text(self):
+        dialog = TextEdit(self, self.text)
+
+        if dialog.exec() and dialog.textValue():
+            self.text = dialog.textValue()
+
+    def tts(self):
+        tts(self.text)
 
 class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
