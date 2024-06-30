@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtCore, QtGui
-from ultralytics import YOLOv10
-from manga_ocr import MangaOcr
+#from ultralytics import YOLOv10
+#from manga_ocr import MangaOcr
 from utils import screenshot
 
 
@@ -8,29 +8,51 @@ class Popup(QtWidgets.QWidget):
     def __init__(self, bbox: list[int, int, int, int], text: str, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
-        self.setMouseTracking(True)
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        layout = QtWidgets.QGridLayout()
+        text_outline = QtWidgets.QLabel()
+        text_outline.setStyleSheet("QWidget { border: 2px solid royalblue; }")
+        text_outline.setFixedSize(bbox[2] - bbox[0], bbox[3] - bbox[1])
+        layout.addWidget(text_outline)
+
+        button_container = QtWidgets.QWidget()
+        button_layout = QtWidgets.QGridLayout()
+
+        tts_button = QtWidgets.QPushButton(QtGui.QIcon("icons/tts.svg"), "")
+        button_layout.addWidget(tts_button, 0, 0)
+
+        furigana_button = QtWidgets.QPushButton(QtGui.QIcon("icons/furigana.svg"), "")
+        button_layout.addWidget(furigana_button, 1, 0)
+
+        dictionary_button = QtWidgets.QPushButton(QtGui.QIcon("icons/dictionary.svg"), "")
+        button_layout.addWidget(dictionary_button, 0, 1)
+
+        translate_button = QtWidgets.QPushButton(QtGui.QIcon("icons/translate.svg"), "")
+        button_layout.addWidget(translate_button, 1, 1)
+
+        button_container.setLayout(button_layout)
+        layout.addWidget(button_container)
 
         #QtGui.QIcon("icons/")
-        layout.addWidget(QtWidgets.QLabel(text))
-        self.setStyleSheet("QWidget { color: red; width: 100px; }")
+        #layout.addWidget(QtWidgets.QLabel(text))
+        #self.setStyleSheet("QWidget { color: red; width: 100px; }")
 
         self.setLayout(layout)
 
-        self.move(bbox[2] + 10, bbox[1])
+        self.move(*bbox[:2])
         self.show()
 
 class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
-        self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
-        self.ocr_model = MangaOcr()
+        #self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
+        #self.ocr_model = MangaOcr()
         self.popups: list[Popup] = []
         self.bbox = bbox
 
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        #self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
         self.setGeometry(
@@ -41,10 +63,10 @@ class Overlay(QtWidgets.QWidget):
         )
         self.show()
 
-        self.timer = QtCore.QTimer()
+        """self.timer = QtCore.QTimer()
         self.timer.setInterval(3000)
         self.timer.timeout.connect(self.scan_screen)
-        self.timer.start()
+        self.timer.start()"""
 
     def scan_screen(self):
         # rename this function & make it run in separate thread
@@ -67,8 +89,8 @@ class Overlay(QtWidgets.QWidget):
 
         for bbox in bboxes:
             x, y, w, h = bbox.xywh.tolist()[0]
-            w += 22
-            h += 22
+            w += 8
+            h += 8
             x1 = x - w / 2
             y1 = y - h / 2
             x2, y2 = x1 + w, y1 + h
@@ -92,6 +114,7 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
         self.setCursor(QtCore.Qt.CursorShape.CrossCursor)
 
         layout = QtWidgets.QVBoxLayout()
+        #layout.setContentsMargins(0, 0, 0, 0)
 
         select_region = QtWidgets.QWidget()
         select_region.setStyleSheet("QWidget { background-color: rgba(0, 150, 255, 0.3); }")
@@ -121,5 +144,7 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication()
-    window = MainWindow()
+    #window = MainWindow()
+    overlay = Overlay((200, 200, 400, 400))
+    test_popup = Popup((0, 0, 50, 100), "hello world", overlay)
     app.exec()
