@@ -97,7 +97,7 @@ def train():
     model.config.num_beams = 4
 
     training_args = Seq2SeqTrainingArguments(
-        num_train_epochs=20,
+        num_train_epochs=40,
         predict_with_generate=True,
         eval_strategy="steps",
         per_device_train_batch_size=32,
@@ -105,7 +105,7 @@ def train():
         fp16=True, 
         output_dir="models/test_ocr_v2/",
         logging_steps=25,
-        save_steps=500,
+        save_steps=2000,
         eval_steps=200
     )
 
@@ -131,11 +131,11 @@ def train():
         eval_dataset=validation_dataset,
         data_collator=default_data_collator
     )
-    trainer.train("models/test_ocr_v2/checkpoint-4000")
+    trainer.train()
 
 
 def test():
-    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr_v2/checkpoint-4000")
+    model = VisionEncoderDecoderModel.from_pretrained("models/test_ocr_v2/checkpoint-20000")
     processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
     tokenizer = AutoTokenizer.from_pretrained("tohoku-nlp/bert-base-japanese-v3")
 
