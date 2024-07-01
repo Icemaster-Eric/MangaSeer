@@ -2,6 +2,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 #from ultralytics import YOLOv10
 #from manga_ocr import MangaOcr
 from utils import screenshot, tts
+from googletrans import Translator
 
 
 class TextEdit(QtWidgets.QInputDialog):
@@ -22,10 +23,11 @@ class PopupButton(QtWidgets.QPushButton):
 
 
 class Popup(QtWidgets.QWidget):
-    def __init__(self, bbox: list[int, int, int, int], text: str, parent: QtWidgets.QWidget):
+    def __init__(self, bbox: list[int, int, int, int], text: str, translation: str, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
         self.text = text
+        self.translation = translation
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -51,6 +53,7 @@ class Popup(QtWidgets.QWidget):
 
         edit_button.clicked.connect(self.edit_text)
         tts_button.clicked.connect(self.tts)
+        translate_button.clicked.connect(self.translate)
 
         button_layout.addWidget(edit_button, 0, 0)
         button_layout.addWidget(tts_button, 0, 1)
@@ -82,12 +85,17 @@ class Popup(QtWidgets.QWidget):
     def tts(self):
         tts(self.text)
 
+    def translate(self):
+        QtWidgets.QMessageBox.information(self, "Google Translate", self.translation, QtWidgets.QMessageBox.StandardButton.Close)
+
+
 class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
         #self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
         #self.ocr_model = MangaOcr()
+        self.translator = Translator()
         self.popups: list[Popup] = []
         self.bbox = bbox
 
@@ -126,6 +134,8 @@ class Overlay(QtWidgets.QWidget):
             verbose=False
         )[0].boxes
 
+        popups = []
+
         for bbox in bboxes:
             x, y, w, h = bbox.xywh.tolist()[0]
             w += 8
@@ -135,9 +145,15 @@ class Overlay(QtWidgets.QWidget):
             x2, y2 = x1 + w, y1 + h
             bbox_image = ss.crop((x1, y1, x2, y2))
             text = self.ocr_model(bbox_image)
+            popups.append((x1, y1, x2, y2), text)
+
+        translations = self.translator.translate([popup[1] for popup in popups], src="ja")
+
+        for i, popup in enumerate(popups):
             self.popups.append(Popup(
-                (x1, y1, x2, y2),
-                text,
+                popup[0],
+                popup[1],
+                translations[i].text,
                 self
             ))
 
@@ -184,9 +200,14 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication()
     #window = MainWindow()
     overlay = Overlay((200, 200, 400, 400))
+    translator = Translator()
     test_popup = Popup(
         (0, 0, 50, 70),
         "はい。酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
+        translator.translate(
+            "はい。酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
+            src="ja"
+        ).text,
         overlay
     )
     app.exec()
