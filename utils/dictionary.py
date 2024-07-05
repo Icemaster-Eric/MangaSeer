@@ -106,8 +106,7 @@ if __name__ == "__main__":
                 )
             )
 
-            sense_id = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-            print(sense_id)
+            sense_id = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]\
 
             for gloss in sense["gloss"]:
                 cursor.execute(
