@@ -170,3 +170,4 @@ models/*
 rendered_images/*
 tts_output.mp3
 *.db
+*.db-journal

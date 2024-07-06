@@ -22,8 +22,8 @@ class JMDict:
         ]
 
 
-if __name__ == "__main__":
-    with open("manga_datasets/japanese/jmdict-eng-3.5.0.json", "r", encoding="utf-8") as f:
+def generate_jmdict_sqlite(path: str):
+    with open(path, "r", encoding="utf-8") as f:
         jmdict_json: dict = ujson.load(f)
     
     connection = sqlite3.connect("jmdict.db")
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 	PRIMARY KEY("id")
 );""")
 
-    for word in jmdict_json["words"][:5]:
+    for word in jmdict_json["words"]:
         word_id = int(word["id"])
 
         for kanji in word["kanji"]:
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 )
             )
 
-            sense_id = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]\
+            sense_id = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
 
             for gloss in sense["gloss"]:
                 cursor.execute(
@@ -120,3 +120,73 @@ if __name__ == "__main__":
                 )
 
         connection.commit()
+
+
+def generate_jmnedict_sqlite(path: str):
+    with open(path, "r", encoding="utf-8") as f:
+        jmnedict_json: dict = ujson.load(f)
+    
+    connection = sqlite3.connect("jmnedict.db")
+    cursor = connection.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS "kana" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"word_id" INTEGER NOT NULL,
+	"text" TEXT,
+	"tags" TEXT,
+	PRIMARY KEY("id")
+);""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS "kanji" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"word_id" INTEGER NOT NULL,
+	"text" TEXT,
+	"tags" TEXT,
+	PRIMARY KEY("id")
+);""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS "translations" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"word_id" INTEGER,
+	"text" TEXT,
+	"type" TEXT,
+	PRIMARY KEY("id")	
+);""")
+
+    for word in jmnedict_json["words"]:
+        word_id = int(word["id"])
+
+        for kanji in word["kanji"]:
+            cursor.execute(
+                "INSERT INTO kanji (word_id, text, tags) VALUES (?, ?, ?)",
+                (
+                    word_id,
+                    kanji["text"],
+                    ",".join(kanji["tags"])
+                )
+            )
+
+        for kana in word["kana"]:
+            cursor.execute(
+                "INSERT INTO kana (word_id, text, tags) VALUES (?, ?, ?)",
+                (
+                    word_id,
+                    kana["text"],
+                    ",".join(kana["tags"])
+                )
+            )
+
+        for translation in word["translation"]:
+            cursor.execute(
+                "INSERT INTO translations (word_id, text, type) VALUES (?, ?, ?)",
+                (
+                    word_id,
+                    ",".join(translation["type"]),
+                    "\n".join([t["text"] for t in translation["translation"]])
+                )
+            )
+
+        connection.commit()
+
+
+if __name__ == "__main__":
+    generate_jmnedict_sqlite("manga_datasets/japanese/jmnedict-all-3.5.0.json")
