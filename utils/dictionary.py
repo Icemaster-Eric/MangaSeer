@@ -1,4 +1,3 @@
-from typing import Any, Literal
 import ujson
 import sqlite3
 from sudachipy import tokenizer, dictionary
@@ -16,54 +15,76 @@ with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
 
 
 class JMDict:
-    def __init__(self, **dicts: dict[str, tuple[str, dict[str, str]]]):
-        self.dicts: dict[str, dict[Literal["connection", "cursor", "tags"], sqlite3.Connection | sqlite3.Cursor | dict[str, str]]] = {
-            dict_name: {
-                "connection": (connection := sqlite3.connect(dict_path)),
-                "cursor": connection.cursor(),
-                "tags": dict_info[1]
-            } for dict_name, dict_info in dicts.items()
-        }
-        self.kanji = kanji
+    def __init__(self, jmdict_path: str, jmnedict_path: str):
+        self.jmdict_connection = sqlite3.connect(jmdict_path)
+        self.jmdict_cursor = self.jmdict_connection.cursor()
+
+        self.jmnedict_connection = sqlite3.connect(jmnedict_path)
+        self.jmnedict_cursor = self.jmnedict_connection.cursor()
 
         self.sudachi_dict = dictionary.Dictionary(dict="full").create()
 
-    def _search_dicts(
-            self,
-            queries: dict[str, dict[str, tuple]]
-    ) -> list[Any]:
-        results = []
-
-        for dict_name, dict_queries in queries.items():
-            for query, args in dict_queries.items():
-                self.dicts[dict_name]["cursor"].execute(
-                    query, args
-                )
-
     def lookup(self, text: str) -> list[dict | str]:
-        result = []
+        output = []
 
         for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.C):
             token = morpheme.normalized_form()
 
             if not token.isalpha():
-                result.append(token)
+                output.append({
+                    "text": token,
+                    "type": None
+                })
                 continue
 
-            result.append(self._search_dicts(
-                {
-                    "jmdict": {
-                        "SELECT word_id FROM kanji WHERE text = ?": token,
-                        "SELECT word_id FROM kana WHERE text = ?": token
-                    },
-                    "jmnedict": {
-                        "SELECT word_id FROM kanji WHERE text = ?": token,
-                        "SELECT word_id FROM kana WHERE text = ?": token
-                    }
-                }
-            ))
+            table = "kanji" if kanji.intersection(set(token)) else "kana"
 
-        return result
+            words = [{
+                "id": word[0],
+                "common": word[1]
+            } for word in self.jmdict_cursor.execute(
+                f"SELECT word_id, common FROM {table} WHERE text = ?",
+                (token,)
+            ).fetchall()]
+            word_ids = [word[0] for word in words]
+
+            senses = []
+
+            for word_id in word_ids:
+                senses.append([
+                    {
+                        "id": info[0],
+                        "dialect": info[1],
+                        "misc": info[2],
+                        "info": info[3],
+                        "pos": info[4],
+                        "field": info[5],
+                        "gloss": []
+                    } for info in self.jmdict_cursor.execute(
+                        f"SELECT id, dialect, misc, info, pos, field FROM senses WHERE word_id = ?",
+                        (word_id,)
+                    ).fetchall()
+                ])
+
+            for word in senses:
+                for sense in word:
+                    for gloss in self.jmdict_cursor.execute(
+                        f"SELECT gender, text, lang FROM glossary WHERE sense_id = ?",
+                        (sense["id"],)
+                    ).fetchall():
+                        sense["gloss"].append({
+                            "gender": gloss[0],
+                            "text": gloss[1],
+                            "lang": gloss[2]
+                        })
+
+            output.append({
+                "text": token,
+                "type": "word",
+                "words": words
+            })
+
+        return output
 
 
 def generate_jmdict_sqlite(path: str):
@@ -233,9 +254,6 @@ def generate_jmnedict_sqlite(path: str):
 
 
 if __name__ == "__main__":
-    jmdict = JMDict(
-        jmdict=("jmdict.db", jmdict_tags),
-        jmnedict=("jmnedict.db", jmnedict_tags)
-    )
+    jmdict = JMDict("jmdict.db", "jmnedict.db")
 
     pp(jmdict.lookup("私がよく聴くのは西野カナの曲です。彼女の歌の歌詞がとても好きなのです。"))
