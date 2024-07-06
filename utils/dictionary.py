@@ -1,3 +1,4 @@
+from typing import Any, Literal
 import ujson
 import sqlite3
 from sudachipy import tokenizer, dictionary
@@ -15,21 +16,32 @@ with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
 
 
 class JMDict:
-    def __init__(self, jmdict_path: str, jmnedict_path: str):
-        self.jmdict_connection = sqlite3.connect(jmdict_path)
-        self.jmdict_cursor = self.jmdict_connection.cursor()
-
-        self.jmnedict_connection = sqlite3.connect(jmnedict_path)
-        self.jmnedict_cursor = self.jmnedict_connection.cursor()
-
-        self.jmdict_tags = jmdict_tags
-        self.jmnedict_tags = jmnedict_tags
+    def __init__(self, **dicts: dict[str, tuple[str, dict[str, str]]]):
+        self.dicts: dict[str, dict[Literal["connection", "cursor", "tags"], sqlite3.Connection | sqlite3.Cursor | dict[str, str]]] = {
+            dict_name: {
+                "connection": (connection := sqlite3.connect(dict_path)),
+                "cursor": connection.cursor(),
+                "tags": dict_info[1]
+            } for dict_name, dict_info in dicts.items()
+        }
         self.kanji = kanji
 
         self.sudachi_dict = dictionary.Dictionary(dict="full").create()
 
+    def _search_dicts(
+            self,
+            queries: dict[str, dict[str, tuple]]
+    ) -> list[Any]:
+        results = []
+
+        for dict_name, dict_queries in queries.items():
+            for query, args in dict_queries.items():
+                self.dicts[dict_name]["cursor"].execute(
+                    query, args
+                )
+
     def lookup(self, text: str) -> list[dict | str]:
-        result: list[dict | str] = []
+        result = []
 
         for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.C):
             token = morpheme.normalized_form()
@@ -38,10 +50,18 @@ class JMDict:
                 result.append(token)
                 continue
 
-            print(self.jmdict_cursor.execute("SELECT word_id FROM kanji WHERE text = ?").fetchall())
-            print(self.jmdict_cursor.execute("SELECT word_id FROM kana WHERE text = ?").fetchall())
-
-            result.append()
+            result.append(self._search_dicts(
+                {
+                    "jmdict": {
+                        "SELECT word_id FROM kanji WHERE text = ?": token,
+                        "SELECT word_id FROM kana WHERE text = ?": token
+                    },
+                    "jmnedict": {
+                        "SELECT word_id FROM kanji WHERE text = ?": token,
+                        "SELECT word_id FROM kana WHERE text = ?": token
+                    }
+                }
+            ))
 
         return result
 
@@ -213,6 +233,9 @@ def generate_jmnedict_sqlite(path: str):
 
 
 if __name__ == "__main__":
-    jmdict = JMDict("jmdict.db", "jmnedict.db")
+    jmdict = JMDict(
+        jmdict=("jmdict.db", jmdict_tags),
+        jmnedict=("jmnedict.db", jmnedict_tags)
+    )
 
     pp(jmdict.lookup("私がよく聴くのは西野カナの曲です。彼女の歌の歌詞がとても好きなのです。"))
