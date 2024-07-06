@@ -1,25 +1,49 @@
 import ujson
 import sqlite3
+from sudachipy import tokenizer, dictionary
+from pprint import pp
+
+# add the json to the file directly?
+with open("jmdict_tags.json", "r", encoding="utf-8") as f:
+    jmdict_tags = ujson.load(f)
+
+with open("jmnedict_tags.json", "r", encoding="utf-8") as f:
+    jmnedict_tags = ujson.load(f)
+
+with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
+    kanji = set([k.strip() for k in f.readlines()])
 
 
 class JMDict:
-    def __init__(self, path: str):
-        with open(path, "r", encoding="utf-8") as f:
-            jmdict_json = ujson.load(f)
-        
-        self.tags = jmdict_json["tags"]
+    def __init__(self, jmdict_path: str, jmnedict_path: str):
+        self.jmdict_connection = sqlite3.connect(jmdict_path)
+        self.jmdict_cursor = self.jmdict_connection.cursor()
 
-    def lookup(self, text: str) -> list[dict]:
-        return [
-            {
-                "word": "",
-                "type": "",
-                "definitions": (
-                    "definition a",
-                    "definition b"
-                )
-            }
-        ]
+        self.jmnedict_connection = sqlite3.connect(jmnedict_path)
+        self.jmnedict_cursor = self.jmnedict_connection.cursor()
+
+        self.jmdict_tags = jmdict_tags
+        self.jmnedict_tags = jmnedict_tags
+        self.kanji = kanji
+
+        self.sudachi_dict = dictionary.Dictionary(dict="full").create()
+
+    def lookup(self, text: str) -> list[dict | str]:
+        result: list[dict | str] = []
+
+        for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.C):
+            token = morpheme.normalized_form()
+
+            if not token.isalpha():
+                result.append(token)
+                continue
+
+            print(self.jmdict_cursor.execute("SELECT word_id FROM kanji WHERE text = ?").fetchall())
+            print(self.jmdict_cursor.execute("SELECT word_id FROM kana WHERE text = ?").fetchall())
+
+            result.append()
+
+        return result
 
 
 def generate_jmdict_sqlite(path: str):
@@ -189,4 +213,6 @@ def generate_jmnedict_sqlite(path: str):
 
 
 if __name__ == "__main__":
-    generate_jmnedict_sqlite("manga_datasets/japanese/jmnedict-all-3.5.0.json")
+    jmdict = JMDict("jmdict.db", "jmnedict.db")
+
+    pp(jmdict.lookup("私がよく聴くのは西野カナの曲です。彼女の歌の歌詞がとても好きなのです。"))
