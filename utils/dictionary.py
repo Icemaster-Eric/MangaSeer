@@ -25,14 +25,17 @@ class JMDict:
         self.sudachi_dict = dictionary.Dictionary(dict="full").create()
     
     @staticmethod
-    def _get_tags(tags: str) -> list[str]:
+    def _get_tags(tags: str, jmdict: bool | None = None) -> list[str]:
         if not tags:
             return []
 
-        if "\n" in tags:
-            return tags.split("\n")
-        else:
-            return tags.split(",")
+        match jmdict:
+            case None:
+                return tags.split(",")
+            case True:
+                return [jmdict_tags[tag] for tag in tags.split(",")]
+            case False:
+                return [jmnedict_tags[tag] for tag in tags.split(",")]
 
     def lookup(self, text: str, common=True) -> list[dict]:
         """Tokenizes the given string and looks up jmdict/jmnedict definitions for each word
@@ -42,29 +45,18 @@ class JMDict:
             common (bool, optional): Whether to only include common definitions. Defaults to True.
 
         Returns:
-            list[dict]: A list of the tokens, along with the relevant information. An example output is included below:
-        ```json
-        {"text": "私",
-         "type": "word",
-         "words": [{
-             "id": 1311110,
-             "tags": [],
-             "common": true,
-             "senses": [{
-                 "id": 36763,
-                 "dialect": [],
-                 "misc": [],
-                 "info": ["slightly formal or feminine"],
-                 "pos": ["pn"],
-                 "field": [],
-                 "gloss": [
-                     {"gender": null,"text": "I", "lang": "eng"},
-                     {"gender": null, "text": "me", "lang": "eng"}]}]}]}
-        ```
+            list[dict]: The tokenized string as a list, along with relevant information.
         """
         output = []
 
-        for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.C):
+        for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A):
+            #print(morpheme.raw_surface(), morpheme.part_of_speech())
+            pos = set(morpheme.part_of_speech())
+
+            if "助詞" in pos: # ignore particles
+                #print("ignored")
+                continue
+
             token = morpheme.raw_surface()
 
             if not token.isalpha():
@@ -76,24 +68,66 @@ class JMDict:
 
             table = "kanji" if kanji.intersection(set(token)) else "kana"
 
+            if pos.intersection({"固有名詞", "人名"}): # proper noun
+                words = [{
+                    "id": word[0],
+                    "tags": self._get_tags(word[1], jmdict=False)
+                } for word in self.jmnedict_cursor.execute(
+                    f"SELECT word_id, tags FROM {table} WHERE text = ?",
+                    (token,)
+                ).fetchall()]
+
+                if table == "kanji":
+                    for word in words:
+                        word["reading"] = self.jmnedict_cursor.execute(
+                            f"SELECT text FROM kana WHERE word_id = ?",
+                            (word["id"],)
+                        ).fetchone()[0]
+
+                for word in words:
+                    word["translations"] = [
+                        {
+                            "text": info[0].replace("\n", "") if info[0] else None,
+                            "type": self._get_tags(info[1], jmdict=False)
+                        } for info in self.jmnedict_cursor.execute(
+                            f"SELECT text, type FROM translations WHERE word_id = ?",
+                            (word["id"],)
+                        ).fetchall()
+                    ]
+
+                if words:
+                    output.append({
+                        "text": token,
+                        "type": "name",
+                        "words": [word for word in words]
+                    })
+                    continue
+
             words = [{
                 "id": word[0],
-                "tags": self._get_tags(word[1]),
+                "tags": self._get_tags(word[1], jmdict=True),
                 "common": bool(word[2])
             } for word in self.jmdict_cursor.execute(
                 f"SELECT word_id, tags, common FROM {table} WHERE text = ?",
                 (token,)
             ).fetchall()]
 
+            if table == "kanji":
+                for word in words:
+                    word["reading"] = self.jmdict_cursor.execute(
+                        f"SELECT text FROM kana WHERE word_id = ?",
+                        (word["id"],)
+                    ).fetchone()[0]
+
             for word in words:
                 senses = [
                     {
                         "id": info[0],
-                        "dialect": self._get_tags(info[1]),
-                        "misc": self._get_tags(info[2]),
-                        "info": self._get_tags(info[3]),
-                        "pos": self._get_tags(info[4]),
-                        "field": self._get_tags(info[5]),
+                        "dialect": self._get_tags(info[1], jmdict=True),
+                        "misc": self._get_tags(info[2], jmdict=True),
+                        "info": info[3].replace("\n", "") if info[3] else None,
+                        "pos": self._get_tags(info[4], jmdict=True),
+                        "field": self._get_tags(info[5], jmdict=True),
                         "gloss": []
                     } for info in self.jmdict_cursor.execute(
                         f"SELECT id, dialect, misc, info, pos, field FROM senses WHERE word_id = ?",
@@ -113,12 +147,16 @@ class JMDict:
                         })
 
                 word["senses"] = senses
+            
+            if words:
+                output.append({
+                    "text": token,
+                    "type": "word",
+                    "words": [word for word in words if word["common"] or not common]
+                })
+                continue
 
-            output.append({
-                "text": token,
-                "type": "word",
-                "words": [word for word in words if word["common"] or not common]
-            })
+            output.append({"text": token, "type": None})
 
         return output
 
@@ -278,7 +316,7 @@ def generate_jmnedict_sqlite(path: str):
 
         for translation in word["translation"]:
             cursor.execute(
-                "INSERT INTO translations (word_id, text, type) VALUES (?, ?, ?)",
+                "INSERT INTO translations (word_id, type, text) VALUES (?, ?, ?)",
                 (
                     word_id,
                     ",".join(translation["type"]),
@@ -293,4 +331,4 @@ if __name__ == "__main__":
     jmdict = JMDict("jmdict.db", "jmnedict.db")
 
     output = jmdict.lookup("私がよく聴くのは西野カナの曲です。彼女の歌の歌詞がとても好きなのです。")
-    pp(output[3])
+    pp(output)
