@@ -24,19 +24,39 @@ class PopupButton(QtWidgets.QPushButton):
 
 
 class DictWord(QtWidgets.QLabel):
-    def __init__(self, text: str, layout: QtWidgets.QVBoxLayout):
-        super().__init__(text)
+    def __init__(self, word: dict, info_widget: QtWidgets.QWidget):
+        super().__init__(word["text"])
 
-        self.t = text
-        self.l = layout
+        self.word = word
+        self.info_widget = info_widget
 
-        self.setStyleSheet("QLabel { font-size: 24px; } QLabel:hover { background-color: powderblue; }")
+        self.setStyleSheet("QLabel { font-size: 24px; border-radius: 5px; } QLabel:hover { background-color: rgba(0, 191, 255, 0.5); }")
         self.setFont("Noto Sans JP")
-    
+        self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
+
     def mousePressEvent(self, event):
-        self.l.addWidget(
-            QtWidgets.QLabel(self.t)
-        )
+        layout = QtWidgets.QVBoxLayout()
+
+        if self.word["type"] == "word":
+            for word in self.word["words"]:
+                if word["tags"]:
+                    tags_container = QtWidgets.QWidget()
+                    tags_layout = QtWidgets.QHBoxLayout()
+
+                    for tag in word["tags"]:
+                        tag_label = QtWidgets.QLabel(tag)
+                        tag_label.setStyleSheet("QLabel { font-size: 18px; color: rgb(0, 100, 0); }")
+                        tags_layout.addWidget(tag_label)
+
+                    tags_container.setLayout(tags_layout)
+                    layout.addWidget(tags_container)
+
+                if "reading" in word:
+                    reading_label = QtWidgets.QLabel(word["reading"])
+                    reading_label.setStyleSheet("QLabel { font-size: 22px; }")
+                    layout.addWidget(reading_label)
+
+        self.info_widget.setLayout(layout)
 
 
 class Dictionary(QtWidgets.QDialog):
@@ -52,14 +72,27 @@ class Dictionary(QtWidgets.QDialog):
         text_widget = QtWidgets.QWidget()
         text_layout = QtWidgets.QHBoxLayout()
         text_layout.setSpacing(0)
-
-        for word in words:
-            text_label = DictWord(word["text"], layout)
-            text_layout.addWidget(text_label)
-
         text_widget.setLayout(text_layout)
 
+        info_widget = QtWidgets.QWidget()
+        test_layout = QtWidgets.QVBoxLayout()
+        test_layout.addWidget(QtWidgets.QLabel("testing"))
+        info_widget.setLayout(test_layout)
+        test_layout2 = QtWidgets.QVBoxLayout()
+        test_layout2.addWidget(QtWidgets.QLabel("testing2"))
+        info_widget.setLayout(test_layout2)
+
+        for word in words:
+            if not word["type"]:
+                text_label = QtWidgets.QLabel(word["text"])
+                text_label.setStyleSheet("QLabel { font-size: 24px; }")
+            else:
+                text_label = DictWord(word, info_widget)
+
+            text_layout.addWidget(text_label)
+
         layout.addWidget(text_widget)
+        layout.addWidget(info_widget)
 
         self.setLayout(layout)
 
