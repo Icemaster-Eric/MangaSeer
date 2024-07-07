@@ -23,22 +23,14 @@ class PopupButton(QtWidgets.QPushButton):
         self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
 
 
-class DictWord(QtWidgets.QLabel):
-    def __init__(self, word: dict, info_widget: QtWidgets.QWidget):
-        super().__init__(word["text"])
+class DictInfo(QtWidgets.QWidget):
+    def __init__(self, words: dict):
+        super().__init__()
 
-        self.word = word
-        self.info_widget = info_widget
-
-        self.setStyleSheet("QLabel { font-size: 24px; border-radius: 5px; } QLabel:hover { background-color: rgba(0, 191, 255, 0.5); }")
-        self.setFont("Noto Sans JP")
-        self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
-
-    def mousePressEvent(self, event):
         layout = QtWidgets.QVBoxLayout()
 
-        if self.word["type"] == "word":
-            for word in self.word["words"]:
+        if words["type"] == "word":
+            for word in words["words"]:
                 if word["tags"]:
                     tags_container = QtWidgets.QWidget()
                     tags_layout = QtWidgets.QHBoxLayout()
@@ -53,10 +45,53 @@ class DictWord(QtWidgets.QLabel):
 
                 if "reading" in word:
                     reading_label = QtWidgets.QLabel(word["reading"])
-                    reading_label.setStyleSheet("QLabel { font-size: 22px; }")
+                    reading_label.setStyleSheet("QLabel { font-size: 18px; }")
                     layout.addWidget(reading_label)
 
-        self.info_widget.setLayout(layout)
+                for sense in word["senses"]:
+                    for k in sense.keys():
+                        if not k:
+                            continue
+
+                        if k == "info":
+                            info_label = QtWidgets.QLabel(sense[k])
+                            info_label.setStyleSheet("QLabel { font-size: 18px; }")
+                            layout.addWidget(info_label)
+                        elif k == "gloss":
+                            pass
+                        elif k != "id":
+                            info_container = QtWidgets.QWidget()
+                            info_layout = QtWidgets.QHBoxLayout()
+                            info_layout.setContentsMargins(0, 0, 0, 0)
+                            for info in sense[k]:
+                                info_label = QtWidgets.QLabel(info)
+                                info_label.setStyleSheet("QLabel { font-size: 18px; }")
+                                info_layout.addWidget(info_label)
+                            info_container.setLayout(info_layout)
+                            layout.addWidget(info_container)
+
+        self.setLayout(layout)
+
+
+class DictWord(QtWidgets.QLabel):
+    def __init__(self, word: dict, info_scroll: QtWidgets.QWidget):
+        super().__init__(word["text"])
+
+        self.word = word
+        self.info_scroll = info_scroll
+
+        self.setStyleSheet("QLabel { font-size: 24px; border-radius: 5px; } QLabel:hover { background-color: rgba(0, 191, 255, 0.5); }")
+        self.setFont("Noto Sans JP")
+        self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
+
+    def mousePressEvent(self, event):
+        layout = self.info_scroll.layout()
+
+        item = layout.itemAt(0)
+        if item:
+            item.widget().setParent(None)
+
+        layout.addWidget(DictInfo(self.word))
 
 
 class Dictionary(QtWidgets.QDialog):
@@ -72,27 +107,27 @@ class Dictionary(QtWidgets.QDialog):
         text_widget = QtWidgets.QWidget()
         text_layout = QtWidgets.QHBoxLayout()
         text_layout.setSpacing(0)
-        text_widget.setLayout(text_layout)
+        text_layout.setContentsMargins(0, 0, 0, 0)
 
-        info_widget = QtWidgets.QWidget()
-        test_layout = QtWidgets.QVBoxLayout()
-        test_layout.addWidget(QtWidgets.QLabel("testing"))
-        info_widget.setLayout(test_layout)
-        test_layout2 = QtWidgets.QVBoxLayout()
-        test_layout2.addWidget(QtWidgets.QLabel("testing2"))
-        info_widget.setLayout(test_layout2)
+        info_scroll = QtWidgets.QScrollArea()
+        info_scroll_layout = QtWidgets.QVBoxLayout()
+        info_scroll.setLayout(info_scroll_layout)
 
         for word in words:
             if not word["type"]:
                 text_label = QtWidgets.QLabel(word["text"])
                 text_label.setStyleSheet("QLabel { font-size: 24px; }")
             else:
-                text_label = DictWord(word, info_widget)
+                text_label = DictWord(word, info_scroll)
 
             text_layout.addWidget(text_label)
 
+        text_widget.setLayout(text_layout)
+
+        text_widget.setFixedSize(text_widget.minimumSizeHint())
+
         layout.addWidget(text_widget)
-        layout.addWidget(info_widget)
+        layout.addWidget(info_scroll)
 
         self.setLayout(layout)
 
