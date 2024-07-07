@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 #from ultralytics import YOLOv10
 #from manga_ocr import MangaOcr
-from utils import screenshot, tts
+from utils import screenshot, tts, JMDict
 
 
 class TextEdit(QtWidgets.QInputDialog):
@@ -11,7 +11,9 @@ class TextEdit(QtWidgets.QInputDialog):
         self.setWindowTitle("Edit Text")
         self.setInputMode(QtWidgets.QInputDialog.InputMode.TextInput)
         self.setLabelText("Enter text:")
-        self.findChild(QtWidgets.QLineEdit).setText(text)
+        line_edit = self.findChild(QtWidgets.QLineEdit)
+        line_edit.setFont("Noto Sans JP")
+        line_edit.setText(text)
 
 
 class PopupButton(QtWidgets.QPushButton):
@@ -19,6 +21,47 @@ class PopupButton(QtWidgets.QPushButton):
         super().__init__(QtGui.QIcon(icon), "")
         self.setStyleSheet("QPushButton { background-color: rgb(60, 60, 60); } QPushButton:hover { background-color: rgb(52, 52, 52); } QPushButton::pressed { background-color: rgb(35, 35, 35); }")
         self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
+
+
+class DictWord(QtWidgets.QLabel):
+    def __init__(self, text: str, layout: QtWidgets.QVBoxLayout):
+        super().__init__(text)
+
+        self.t = text
+        self.l = layout
+
+        self.setStyleSheet("QLabel { font-size: 24px; } QLabel:hover { background-color: powderblue; }")
+        self.setFont("Noto Sans JP")
+    
+    def mousePressEvent(self, event):
+        self.l.addWidget(
+            QtWidgets.QLabel(self.t)
+        )
+
+
+class Dictionary(QtWidgets.QDialog):
+    def __init__(self, parent: QtWidgets.QWidget, text: str):
+        super().__init__(parent)
+
+        words = jmdict.lookup(text, common=True)
+
+        self.setWindowTitle("Dictionary")
+
+        layout = QtWidgets.QVBoxLayout()
+
+        text_widget = QtWidgets.QWidget()
+        text_layout = QtWidgets.QHBoxLayout()
+        text_layout.setSpacing(0)
+
+        for word in words:
+            text_label = DictWord(word["text"], layout)
+            text_layout.addWidget(text_label)
+
+        text_widget.setLayout(text_layout)
+
+        layout.addWidget(text_widget)
+
+        self.setLayout(layout)
 
 
 class Popup(QtWidgets.QWidget):
@@ -51,6 +94,7 @@ class Popup(QtWidgets.QWidget):
 
         edit_button.clicked.connect(self.edit_text)
         tts_button.clicked.connect(self.tts)
+        dictionary_button.clicked.connect(self.dictionary)
 
         button_layout.addWidget(edit_button, 0, 0)
         button_layout.addWidget(save_button, 0, 1)
@@ -81,6 +125,11 @@ class Popup(QtWidgets.QWidget):
 
     def tts(self):
         tts(self.text)
+    
+    def dictionary(self):
+        dictionary = Dictionary(self, self.text)
+
+        dictionary.exec()
 
 
 class Overlay(QtWidgets.QWidget):
@@ -182,17 +231,18 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
 
 
 if __name__ == "__main__":
+    jmdict = JMDict("jmdict.db", "jmnedict.db")
+
     app = QtWidgets.QApplication()
+
+    QtGui.QFontDatabase.addApplicationFont("fonts/NotoSansJP.ttf")
+    font = QtGui.QFont("Noto Sans JP")
+
     #window = MainWindow()
     overlay = Overlay((200, 200, 400, 400))
-    translator = Translator()
     test_popup = Popup(
         (0, 0, 50, 70),
         "はい。酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
-        translator.translate(
-            "はい。酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
-            src="ja"
-        ).text,
         overlay
     )
     app.exec()

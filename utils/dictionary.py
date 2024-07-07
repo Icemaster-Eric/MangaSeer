@@ -147,7 +147,7 @@ class JMDict:
                         })
 
                 word["senses"] = senses
-            
+
             if words:
                 output.append({
                     "text": token,
