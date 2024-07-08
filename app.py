@@ -23,75 +23,32 @@ class PopupButton(QtWidgets.QPushButton):
         self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
 
 
-class DictInfo(QtWidgets.QWidget):
-    def __init__(self, words: dict):
-        super().__init__()
-
-        layout = QtWidgets.QVBoxLayout()
-
-        if words["type"] == "word":
-            for word in words["words"]:
-                if word["tags"]:
-                    tags_container = QtWidgets.QWidget()
-                    tags_layout = QtWidgets.QHBoxLayout()
-
-                    for tag in word["tags"]:
-                        tag_label = QtWidgets.QLabel(tag)
-                        tag_label.setStyleSheet("QLabel { font-size: 18px; color: rgb(0, 100, 0); }")
-                        tags_layout.addWidget(tag_label)
-
-                    tags_container.setLayout(tags_layout)
-                    layout.addWidget(tags_container)
-
-                if "reading" in word:
-                    reading_label = QtWidgets.QLabel(word["reading"])
-                    reading_label.setStyleSheet("QLabel { font-size: 18px; }")
-                    layout.addWidget(reading_label)
-
-                for sense in word["senses"]:
-                    for k in sense.keys():
-                        if not k:
-                            continue
-
-                        if k == "info":
-                            info_label = QtWidgets.QLabel(sense[k])
-                            info_label.setStyleSheet("QLabel { font-size: 18px; }")
-                            layout.addWidget(info_label)
-                        elif k == "gloss":
-                            pass
-                        elif k != "id":
-                            info_container = QtWidgets.QWidget()
-                            info_layout = QtWidgets.QHBoxLayout()
-                            info_layout.setContentsMargins(0, 0, 0, 0)
-                            for info in sense[k]:
-                                info_label = QtWidgets.QLabel(info)
-                                info_label.setStyleSheet("QLabel { font-size: 18px; }")
-                                info_layout.addWidget(info_label)
-                            info_container.setLayout(info_layout)
-                            layout.addWidget(info_container)
-
-        self.setLayout(layout)
+class WordInfo(QtWidgets.QLabel):
+    def __init__(self, word: dict):
+        super().__init__(str(word))
 
 
 class DictWord(QtWidgets.QLabel):
-    def __init__(self, word: dict, info_scroll: QtWidgets.QWidget):
+    def __init__(self, word: dict, info_widget: QtWidgets.QListWidget):
         super().__init__(word["text"])
 
         self.word = word
-        self.info_scroll = info_scroll
+        self.info_widget = info_widget
 
-        self.setStyleSheet("QLabel { font-size: 24px; border-radius: 5px; } QLabel:hover { background-color: rgba(0, 191, 255, 0.5); }")
+        self.setStyleSheet("QLabel { font-size: 20px; border-radius: 5px; } QLabel:hover { background-color: rgba(0, 191, 255, 0.5); }")
         self.setFont("Noto Sans JP")
         self.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
 
     def mousePressEvent(self, event):
-        layout = self.info_scroll.layout()
+        self.info_widget.clear()
 
-        item = layout.itemAt(0)
-        if item:
-            item.widget().setParent(None)
+        if self.word["type"] == "word":
+            for i, word in enumerate(self.word["words"]):
+                word_item = QtWidgets.QListWidgetItem(f"{i}.")
+                word_info = WordInfo(word)
 
-        layout.addWidget(DictInfo(self.word))
+                self.info_widget.addItem(word_item)
+                self.info_widget.setItemWidget(word_item, word_info)
 
 
 class Dictionary(QtWidgets.QDialog):
@@ -101,35 +58,39 @@ class Dictionary(QtWidgets.QDialog):
         words = jmdict.lookup(text, common=True)
 
         self.setWindowTitle("Dictionary")
+        self.setMaximumWidth(600)
 
         layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+
+        scroll_area = QtWidgets.QScrollArea()
+
+        container_widget = QtWidgets.QWidget()
+        container_layout = QtWidgets.QVBoxLayout()
+        container_widget.setLayout(container_layout)
+
+        info_widget = QtWidgets.QListWidget()
 
         text_widget = QtWidgets.QWidget()
         text_layout = QtWidgets.QHBoxLayout()
+        text_widget.setLayout(text_layout)
         text_layout.setSpacing(0)
-        text_layout.setContentsMargins(0, 0, 0, 0)
-
-        info_scroll = QtWidgets.QScrollArea()
-        info_scroll_layout = QtWidgets.QVBoxLayout()
-        info_scroll.setLayout(info_scroll_layout)
 
         for word in words:
             if not word["type"]:
                 text_label = QtWidgets.QLabel(word["text"])
-                text_label.setStyleSheet("QLabel { font-size: 24px; }")
+                text_label.setStyleSheet("QLabel { font-size: 20px; }")
+                text_label.setFont("Noto Sans JP")
             else:
-                text_label = DictWord(word, info_scroll)
+                text_label = DictWord(word, info_widget)
 
             text_layout.addWidget(text_label)
 
-        text_widget.setLayout(text_layout)
+        container_layout.addWidget(text_widget)
+        container_layout.addWidget(info_widget)
 
-        text_widget.setFixedSize(text_widget.minimumSizeHint())
-
-        layout.addWidget(text_widget)
-        layout.addWidget(info_scroll)
-
-        self.setLayout(layout)
+        scroll_area.setWidget(container_widget)
+        layout.addWidget(scroll_area)
 
 
 class Popup(QtWidgets.QWidget):
@@ -310,7 +271,7 @@ if __name__ == "__main__":
     overlay = Overlay((200, 200, 400, 400))
     test_popup = Popup(
         (0, 0, 50, 70),
-        "はい。酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
+        "酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
         overlay
     )
     app.exec()
