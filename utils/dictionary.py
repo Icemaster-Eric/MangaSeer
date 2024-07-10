@@ -50,11 +50,9 @@ class JMDict:
         output = []
 
         for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A):
-            #print(morpheme.raw_surface(), morpheme.part_of_speech())
             pos = set(morpheme.part_of_speech())
 
             if "助詞" in pos: # ignore particles
-                #print("ignored")
                 continue
 
             token = morpheme.raw_surface()

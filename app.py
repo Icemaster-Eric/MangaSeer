@@ -120,12 +120,44 @@ class WordInfo(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(QtWidgets.QLabel("testing"))
-
         if "reading" in word:
-            reading_label = QtWidgets.QLabel(word["reading"])
-            reading_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 18px; border-radius: 5px; }")
+            reading_label = QtWidgets.QLabel(f"Reading: {word['reading']}")
+            reading_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
             layout.addWidget(reading_label)
+
+        for i, sense in enumerate(word["senses"]):
+            if i != 0:
+                layout.addSpacerItem(QtWidgets.QSpacerItem(100, 10))
+
+            # really ugly code below but whatever, might clean this up in the future
+            if sense["pos"]:
+                pos_label = QtWidgets.QLabel(f"Part of Speech: {', '.join(sense['pos'])}")
+                pos_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
+                layout.addWidget(pos_label)
+
+            if sense["gloss"]:
+                for gloss in sense["gloss"]:
+                    pass
+
+            if sense["info"]:
+                info_label = QtWidgets.QLabel(f"Info: {sense['info']}")
+                info_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
+                layout.addWidget(info_label)
+
+            if sense["field"]:
+                field_label = QtWidgets.QLabel(f": {', '.join(sense['field'])}")
+                field_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
+                layout.addWidget(field_label)
+
+            if sense["dialect"]:
+                dialect_label = QtWidgets.QLabel(f"Dialect: {', '.join(sense['dialect'])}")
+                dialect_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
+                layout.addWidget(dialect_label)
+
+            if sense["misc"]:
+                misc_label = QtWidgets.QLabel(f"Miscellaneous: {', '.join(sense['misc'])}")
+                misc_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
+                layout.addWidget(misc_label)
 
 
 class DictWord(QtWidgets.QLabel):
@@ -142,9 +174,10 @@ class DictWord(QtWidgets.QLabel):
         self.info_widget.clear()
 
         if self.word["type"] == "word":
-            for i, word in enumerate(self.word["words"]):
-                word_item = QtWidgets.QListWidgetItem(f"{i}.")
+            for word in self.word["words"]:
+                word_item = QtWidgets.QListWidgetItem(self.info_widget)
                 word_info = WordInfo(word)
+                word_item.setSizeHint(word_info.sizeHint())
 
                 self.info_widget.addItem(word_item)
                 self.info_widget.setItemWidget(word_item, word_info)
@@ -157,6 +190,7 @@ class Dictionary(QtWidgets.QDialog):
         words = jmdict.lookup(text, common=True)
 
         self.setWindowTitle("Dictionary")
+        self.setFixedWidth(600)
 
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
