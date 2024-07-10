@@ -137,7 +137,13 @@ class WordInfo(QtWidgets.QWidget):
 
             if sense["gloss"]:
                 for gloss in sense["gloss"]:
-                    pass
+                    gloss_label = QtWidgets.QLabel(
+                        f"Glossary: {gloss['text']}" + (f" ({gloss['gender']})" if gloss["gender"] else "") + f" ({gloss['lang']})"
+                    )
+                    gloss_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
+                    layout.addWidget(gloss_label)
+                    #if gloss["gender"]:
+                    #    gender_label = QtWidgets.QLabel(f"Gender: {gloss['gender']}")
 
             if sense["info"]:
                 info_label = QtWidgets.QLabel(f"Info: {sense['info']}")
@@ -161,6 +167,7 @@ class WordInfo(QtWidgets.QWidget):
 
 
 class DictWord(QtWidgets.QLabel):
+
     def __init__(self, word: dict, info_widget: QtWidgets.QListWidget):
         super().__init__(word["text"])
 
@@ -196,6 +203,7 @@ class Dictionary(QtWidgets.QDialog):
         self.setLayout(layout)
 
         info_widget = QtWidgets.QListWidget()
+        info_widget.setVerticalScrollMode(QtWidgets.QListWidget.ScrollMode.ScrollPerPixel)
 
         text_widget = QtWidgets.QWidget()
         text_layout = FlowLayout()
