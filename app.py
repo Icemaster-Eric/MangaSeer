@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
-#from ultralytics import YOLOv10
-#from manga_ocr import MangaOcr
-from utils import screenshot, tts, JMDict
+from ultralytics import YOLOv10
+from manga_ocr import MangaOcr
+from utils import screenshot, tts, JMDict, KeyboardListener
 
 
 class FlowLayout(QtWidgets.QLayout):
@@ -167,7 +167,6 @@ class WordInfo(QtWidgets.QWidget):
 
 
 class DictWord(QtWidgets.QLabel):
-
     def __init__(self, word: dict, info_widget: QtWidgets.QListWidget):
         super().__init__(word["text"])
 
@@ -295,10 +294,11 @@ class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
-        #self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
-        #self.ocr_model = MangaOcr()
+        self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
+        self.ocr_model = MangaOcr()
         self.popups: list[Popup] = []
         self.bbox = bbox
+        self.previous_ss = None
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
@@ -311,21 +311,12 @@ class Overlay(QtWidgets.QWidget):
         )
         self.show()
 
-        """self.timer = QtCore.QTimer()
-        self.timer.setInterval(3000)
-        self.timer.timeout.connect(self.scan_screen)
-        self.timer.start()"""
-
     def scan_screen(self):
         # rename this function & make it run in separate thread
-        for popup in self.popups:
-            popup.hide()
-            popup.deleteLater()
-
-        self.popups.clear()
-
         # change to more universal ss method later
         ss = screenshot(self.bbox)
+
+        self.previous_ss = ss
 
         bboxes = self.yolo_model(
             source=ss,
@@ -334,6 +325,12 @@ class Overlay(QtWidgets.QWidget):
             agnostic_nms=True,
             verbose=False
         )[0].boxes
+
+        for popup in self.popups:
+            popup.hide()
+            popup.deleteLater()
+
+        self.popups.clear()
 
         for bbox in bboxes:
             x, y, w, h = bbox.xywh.tolist()[0]
@@ -356,6 +353,8 @@ class Overlay(QtWidgets.QWidget):
 class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
     def __init__(self):
         super().__init__()
+
+        self.overlay = None
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
@@ -387,6 +386,10 @@ class MainWindow(QtWidgets.QWidget): # no need for actual main window widget (?)
             int(event.globalPosition().y())
         ))
         self.hide()
+    
+    def on_shortcut_triggered(self):
+        if self.overlay:
+            self.overlay.scan_screen()
 
 
 if __name__ == "__main__":
@@ -397,11 +400,15 @@ if __name__ == "__main__":
     QtGui.QFontDatabase.addApplicationFont("fonts/NotoSansJP.ttf")
     font = QtGui.QFont("Noto Sans JP")
 
-    #window = MainWindow()
-    overlay = Overlay((200, 200, 400, 400))
+    window = MainWindow()
+    """overlay = Overlay((200, 200, 400, 400))
     test_popup = Popup(
         (0, 0, 50, 70),
         "酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
         overlay
-    )
+    )"""
+
+    listener = KeyboardListener()
+    listener.trigger_function.connect()
+
     app.exec()
