@@ -283,7 +283,7 @@ class Popup(QtWidgets.QWidget):
 
     def tts(self):
         tts(self.text)
-    
+
     def dictionary(self):
         dictionary = Dictionary(self, self.text)
 
@@ -401,14 +401,15 @@ if __name__ == "__main__":
     font = QtGui.QFont("Noto Sans JP")
 
     window = MainWindow()
-    """overlay = Overlay((200, 200, 400, 400))
-    test_popup = Popup(
-        (0, 0, 50, 70),
-        "酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
-        overlay
-    )"""
+    #overlay = Overlay((200, 200, 400, 400))
+    #test_popup = Popup(
+    #    (0, 0, 50, 70),
+    #    "酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
+    #    overlay
+    #)
 
     listener = KeyboardListener()
-    listener.trigger_function.connect()
+    listener.trigger_function.connect(window.on_shortcut_triggered)
+    listener.start()
 
     app.exec()

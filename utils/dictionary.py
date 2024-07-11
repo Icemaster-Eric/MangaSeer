@@ -52,10 +52,11 @@ class JMDict:
         for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A):
             pos = set(morpheme.part_of_speech())
 
-            if "助詞" in pos: # ignore particles
-                continue
-
             token = morpheme.raw_surface()
+
+            if "助詞" in pos: # ignore particles
+                output.append({"text": token, "type": None})
+                continue
 
             if not token.isalpha():
                 output.append({
@@ -328,5 +329,4 @@ def generate_jmnedict_sqlite(path: str):
 if __name__ == "__main__":
     jmdict = JMDict("jmdict.db", "jmnedict.db")
 
-    output = jmdict.lookup("私がよく聴くのは西野カナの曲です。彼女の歌の歌詞がとても好きなのです。")
-    pp(output)
+    output = jmdict.lookup("雛人形の顔を作ると頭師”になる事")
