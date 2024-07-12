@@ -172,3 +172,4 @@ tts_output.mp3
 *.db
 *.db-journal
 fonts/*
+readings.json

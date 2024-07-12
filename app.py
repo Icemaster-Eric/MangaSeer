@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtCore, QtGui
-from ultralytics import YOLOv10
-from manga_ocr import MangaOcr
+#from ultralytics import YOLOv10
+#from manga_ocr import MangaOcr
 from utils import screenshot, tts, JMDict, KeyboardListener
 
 
@@ -142,8 +142,6 @@ class WordInfo(QtWidgets.QWidget):
                     )
                     gloss_label.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 15px; }")
                     layout.addWidget(gloss_label)
-                    #if gloss["gender"]:
-                    #    gender_label = QtWidgets.QLabel(f"Gender: {gloss['gender']}")
 
             if sense["info"]:
                 info_label = QtWidgets.QLabel(f"Info: {sense['info']}")
@@ -166,6 +164,11 @@ class WordInfo(QtWidgets.QWidget):
                 layout.addWidget(misc_label)
 
 
+class NameInfo(QtWidgets.QWidget):
+    def __init__(self, word: dict):
+        super().__init__()
+
+
 class DictWord(QtWidgets.QLabel):
     def __init__(self, word: dict, info_widget: QtWidgets.QListWidget):
         super().__init__(word["text"])
@@ -178,6 +181,16 @@ class DictWord(QtWidgets.QLabel):
 
     def mousePressEvent(self, event):
         self.info_widget.clear()
+
+        if self.word["readings"]:
+            for reading, pitch_accent in self.word["readings"]:
+                reading_item = QtWidgets.QListWidgetItem(self.info_widget)
+                reading_widget = QtWidgets.QLabel(f"Reading: {reading} Pitch Accent: {pitch_accent}")
+                reading_widget.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 16px; }")
+                reading_item.setSizeHint(reading_widget.sizeHint())
+
+                self.info_widget.addItem(reading_item)
+                self.info_widget.setItemWidget(reading_item, reading_widget)
 
         if self.word["type"] == "word":
             for word in self.word["words"]:
@@ -208,6 +221,7 @@ class Dictionary(QtWidgets.QDialog):
         text_layout = FlowLayout()
         text_widget.setLayout(text_layout)
         text_layout.setSpacing(0)
+        layout.addWidget(text_widget)
 
         for word in words:
             if not word["type"]:
@@ -218,7 +232,6 @@ class Dictionary(QtWidgets.QDialog):
 
             text_layout.addWidget(text_label)
 
-        layout.addWidget(text_widget)
         layout.addWidget(info_widget)
 
 
@@ -294,8 +307,8 @@ class Overlay(QtWidgets.QWidget):
     def __init__(self, bbox):
         super().__init__()
 
-        self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
-        self.ocr_model = MangaOcr()
+        #self.yolo_model = YOLOv10("models/yolo/yolov10l.pt")
+        #self.ocr_model = MangaOcr()
         self.popups: list[Popup] = []
         self.bbox = bbox
         self.previous_ss = None
@@ -400,16 +413,16 @@ if __name__ == "__main__":
     QtGui.QFontDatabase.addApplicationFont("fonts/NotoSansJP.ttf")
     font = QtGui.QFont("Noto Sans JP")
 
-    window = MainWindow()
-    #overlay = Overlay((200, 200, 400, 400))
-    #test_popup = Popup(
-    #    (0, 0, 50, 70),
-    #    "酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
-    #    overlay
-    #)
+    #window = MainWindow()
+    overlay = Overlay((200, 200, 400, 400))
+    test_popup = Popup(
+        (0, 0, 50, 70),
+        "酔い止め薬を一度だけ試しましたが、効果は感じられませんでした。",
+        overlay
+    )
 
-    listener = KeyboardListener()
-    listener.trigger_function.connect(window.on_shortcut_triggered)
-    listener.start()
+    #listener = KeyboardListener()
+    #listener.trigger_function.connect(window.on_shortcut_triggered)
+    #listener.start()
 
     app.exec()

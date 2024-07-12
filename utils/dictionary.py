@@ -13,6 +13,9 @@ with open("jmnedict_tags.json", "r", encoding="utf-8") as f:
 with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
     kanji: set[str] = set([k.strip() for k in f.readlines()])
 
+with open("readings.json", "r", encoding="utf-8") as f:
+    readings: dict[str, list[list[str, str]]] = ujson.load(f)
+
 
 class JMDict:
     def __init__(self, jmdict_path: str, jmnedict_path: str):
@@ -54,13 +57,16 @@ class JMDict:
 
             token = morpheme.raw_surface()
 
+            word_readings = readings.get(token)
+
             if "助詞" in pos: # ignore particles
-                output.append({"text": token, "type": None})
+                output.append({"text": token, "readings": word_readings, "type": None})
                 continue
 
             if not token.isalpha():
                 output.append({
                     "text": token,
+                    "readings": word_readings,
                     "type": None
                 })
                 continue
@@ -97,6 +103,7 @@ class JMDict:
                 if words:
                     output.append({
                         "text": token,
+                        "readings": word_readings,
                         "type": "name",
                         "words": [word for word in words]
                     })
@@ -150,12 +157,13 @@ class JMDict:
             if words:
                 output.append({
                     "text": token,
+                    "readings": word_readings,
                     "type": "word",
                     "words": [word for word in words if word["common"] or not common]
                 })
                 continue
 
-            output.append({"text": token, "type": None})
+            output.append({"text": token, "readings": word_readings, "type": None})
 
         return output
 
