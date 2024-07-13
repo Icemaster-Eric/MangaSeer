@@ -11,6 +11,6 @@ MangaSeer aims to make raw manga a viable source for any Japanese learner. If yo
 There will be prepackaged executables for Windows. Cross-platform support may come in the future.
 
 ## Contributions
-I usually procrastinate and never finish any of my projects. Once [Arcade](https://hackclub.com/arcade/) is over, any pull requests/issues will only be reviewed if I'm in an especially productive mood. (If you star this repository, I might be *slightly* more motivated :laugh:)
+I usually procrastinate and never finish any of my projects. Once [Arcade](https://hackclub.com/arcade/) is over, any pull requests/issues will only be reviewed if I'm in an especially productive mood. (If you star this repository, I might be *slightly* more motivated)
 
 **Important**: At this point in time, please don't open any issues. The code is broken as hell.
