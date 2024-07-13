@@ -183,14 +183,7 @@ class DictWord(QtWidgets.QLabel):
         self.info_widget.clear()
 
         if self.word["readings"]:
-            for reading, pitch_accent in self.word["readings"]:
-                reading_item = QtWidgets.QListWidgetItem(self.info_widget)
-                reading_widget = QtWidgets.QLabel(f"Reading: {reading} Pitch Accent: {pitch_accent}")
-                reading_widget.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 16px; }")
-                reading_item.setSizeHint(reading_widget.sizeHint())
-
-                self.info_widget.addItem(reading_item)
-                self.info_widget.setItemWidget(reading_item, reading_widget)
+            pass # cbb to add the readings in the ui just yet
 
         if self.word["type"] == "word":
             for word in self.word["words"]:

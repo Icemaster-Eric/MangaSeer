@@ -2,6 +2,7 @@ import ujson
 import sqlite3
 from sudachipy import tokenizer, dictionary
 from pprint import pp
+from utils import get_pitch
 
 # add the json to the file directly?
 with open("jmdict_tags.json", "r", encoding="utf-8") as f:
@@ -12,9 +13,6 @@ with open("jmnedict_tags.json", "r", encoding="utf-8") as f:
 
 with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
     kanji: set[str] = set([k.strip() for k in f.readlines()])
-
-with open("readings.json", "r", encoding="utf-8") as f:
-    readings: dict[str, list[list[str, str]]] = ujson.load(f)
 
 
 class JMDict:
@@ -57,7 +55,7 @@ class JMDict:
 
             token = morpheme.raw_surface()
 
-            word_readings = readings.get(token)
+            word_readings = get_pitch(token)
 
             if "助詞" in pos: # ignore particles
                 output.append({"text": token, "readings": word_readings, "type": None})
