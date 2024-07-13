@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 #from ultralytics import YOLOv10
 #from manga_ocr import MangaOcr
-from utils import screenshot, tts, JMDict, KeyboardListener
+from utils import screenshot, tts, JMDict, KeyboardListener, get_pitch
 
 
 class FlowLayout(QtWidgets.QLayout):
@@ -169,11 +169,35 @@ class NameInfo(QtWidgets.QWidget):
         super().__init__()
 
 
+class PitchAccent(QtWidgets.QWidget):
+    def __init__(self, pitch_accent: tuple[str, str]):
+        super().__init__()
+
+        layout = QtWidgets.QGridLayout()
+        layout.setSpacing(0)
+        layout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetFixedSize)
+        self.setLayout(layout)
+
+        for i, pitch in enumerate(pitch_accent):
+            pitch_widget = QtWidgets.QLabel()
+            pitch_widget.setFixedSize(10, 10)
+            pitch_widget.setStyleSheet("QLabel { background-color: royalblue; border: 2px solid royalblue; border-radius: 5px; }")
+            if pitch[1] == "low":
+                layout.addWidget(pitch_widget, 1, i, QtCore.Qt.AlignmentFlag.AlignCenter)
+            else:
+                layout.addWidget(pitch_widget, 0, i, QtCore.Qt.AlignmentFlag.AlignCenter)
+
+            mora_widget = QtWidgets.QLabel(pitch[0])
+            mora_widget.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 18px; }")
+            layout.addWidget(mora_widget, 2, i)
+
+
 class DictWord(QtWidgets.QLabel):
     def __init__(self, word: dict, info_widget: QtWidgets.QListWidget):
         super().__init__(word["text"])
 
         self.word = word
+        self.readings = get_pitch(word["text"])
         self.info_widget = info_widget
 
         self.setStyleSheet("QLabel { font-family: 'Noto Sans JP'; font-size: 20px; border-radius: 5px; } QLabel:hover { background-color: rgba(0, 191, 255, 0.5); }")
@@ -182,8 +206,22 @@ class DictWord(QtWidgets.QLabel):
     def mousePressEvent(self, event):
         self.info_widget.clear()
 
-        if self.word["readings"]:
-            pass # cbb to add the readings in the ui just yet
+        if self.readings:
+            readings_widget = QtWidgets.QWidget()
+            readings_layout = FlowLayout()
+            readings_widget.setLayout(readings_layout)
+
+            for reading in self.readings:
+                for pitch_accent in reading:
+                    reading_widget = PitchAccent(pitch_accent)
+                    readings_layout.addWidget(reading_widget)
+
+            readings_item = QtWidgets.QListWidgetItem(self.info_widget)
+            readings_item.setToolTip("Pitch Accent Reading")
+            readings_item.setSizeHint(readings_widget.sizeHint())
+
+            self.info_widget.addItem(readings_item)
+            self.info_widget.setItemWidget(readings_item, readings_widget)
 
         if self.word["type"] == "word":
             for word in self.word["words"]:

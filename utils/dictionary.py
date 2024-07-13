@@ -2,7 +2,7 @@ import ujson
 import sqlite3
 from sudachipy import tokenizer, dictionary
 from pprint import pp
-from utils import get_pitch
+
 
 # add the json to the file directly?
 with open("jmdict_tags.json", "r", encoding="utf-8") as f:
@@ -55,16 +55,13 @@ class JMDict:
 
             token = morpheme.raw_surface()
 
-            word_readings = get_pitch(token)
-
             if "助詞" in pos: # ignore particles
-                output.append({"text": token, "readings": word_readings, "type": None})
+                output.append({"text": token, "type": None})
                 continue
 
             if not token.isalpha():
                 output.append({
                     "text": token,
-                    "readings": word_readings,
                     "type": None
                 })
                 continue
@@ -101,7 +98,6 @@ class JMDict:
                 if words:
                     output.append({
                         "text": token,
-                        "readings": word_readings,
                         "type": "name",
                         "words": [word for word in words]
                     })
@@ -155,13 +151,12 @@ class JMDict:
             if words:
                 output.append({
                     "text": token,
-                    "readings": word_readings,
                     "type": "word",
                     "words": [word for word in words if word["common"] or not common]
                 })
                 continue
 
-            output.append({"text": token, "readings": word_readings, "type": None})
+            output.append({"text": token, "type": None})
 
         return output
 
