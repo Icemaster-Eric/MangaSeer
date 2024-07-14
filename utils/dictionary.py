@@ -14,6 +14,9 @@ with open("jmnedict_tags.json", "r", encoding="utf-8") as f:
 with open("manga_datasets/japanese/kanji.txt", "r", encoding="utf-8") as f:
     kanji: set[str] = set([k.strip() for k in f.readlines()])
 
+with open("pos_tags.json", "r", encoding="utf-8") as f:
+    sudachi_to_jmdict: dict[str, str] = ujson.load(f)
+
 
 class JMDict:
     def __init__(self, jmdict_path: str, jmnedict_path: str):
@@ -26,17 +29,15 @@ class JMDict:
         self.sudachi_dict = dictionary.Dictionary(dict="full").create()
     
     @staticmethod
-    def _get_tags(tags: str, jmdict: bool | None = None) -> list[str]:
+    def _get_tags(tags: str) -> list[str]:
         if not tags:
             return []
 
-        match jmdict:
-            case None:
-                return tags.split(",")
-            case True:
-                return [jmdict_tags[tag] for tag in tags.split(",")]
-            case False:
-                return [jmnedict_tags[tag] for tag in tags.split(",")]
+        return tags.split(",")
+    
+    @staticmethod
+    def tag_text(tag: str) -> str:
+        return jmdict_tags.get(tag) or jmnedict_tags.get(tag)
 
     def lookup(self, text: str, common=True) -> list[dict]:
         """Tokenizes the given string and looks up jmdict/jmnedict definitions for each word
@@ -74,7 +75,7 @@ class JMDict:
             if "人名" in pos: # name
                 words = [{
                     "id": word[0],
-                    "tags": self._get_tags(word[1], jmdict=False)
+                    "tags": self._get_tags(word[1])
                 } for word in self.jmnedict_cursor.execute(
                     f"SELECT word_id, tags FROM {table} WHERE text = ?",
                     (token,)
@@ -91,7 +92,7 @@ class JMDict:
                     word["translations"] = [
                         {
                             "text": info[0].replace("\n", "") if info[0] else None,
-                            "type": self._get_tags(info[1], jmdict=False)
+                            "type": self._get_tags(info[1])
                         } for info in self.jmnedict_cursor.execute(
                             f"SELECT text, type FROM translations WHERE word_id = ?",
                             (word["id"],)
@@ -109,7 +110,7 @@ class JMDict:
 
             words = [{
                 "id": word[0],
-                "tags": self._get_tags(word[1], jmdict=True),
+                "tags": self._get_tags(word[1]),
                 "common": bool(word[2])
             } for word in self.jmdict_cursor.execute(
                 f"SELECT word_id, tags, common FROM {table} WHERE text = ?",
@@ -127,11 +128,11 @@ class JMDict:
                 senses = [
                     {
                         "id": info[0],
-                        "dialect": self._get_tags(info[1], jmdict=True),
-                        "misc": self._get_tags(info[2], jmdict=True),
+                        "dialect": self._get_tags(info[1]),
+                        "misc": self._get_tags(info[2]),
                         "info": info[3].replace("\n", "") if info[3] else None,
-                        "pos": self._get_tags(info[4], jmdict=True),
-                        "field": self._get_tags(info[5], jmdict=True),
+                        "pos": self._get_tags(info[4]),
+                        "field": self._get_tags(info[5]),
                         "gloss": []
                     } for info in self.jmdict_cursor.execute(
                         f"SELECT id, dialect, misc, info, pos, field FROM senses WHERE word_id = ?",
