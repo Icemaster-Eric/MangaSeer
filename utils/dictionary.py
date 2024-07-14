@@ -53,22 +53,25 @@ class JMDict:
         for morpheme in self.sudachi_dict.tokenize(text, tokenizer.Tokenizer.SplitMode.A):
             pos = set(morpheme.part_of_speech())
 
+            parts_of_speech = [sudachi_to_jmdict.get(p) for p in pos if p in sudachi_to_jmdict]
+
             token = morpheme.raw_surface()
 
             if "助詞" in pos: # ignore particles
-                output.append({"text": token, "type": None})
+                output.append({"text": token, "pos": parts_of_speech, "type": None})
                 continue
 
             if not token.isalpha():
                 output.append({
                     "text": token,
+                    "pos": parts_of_speech,
                     "type": None
                 })
                 continue
 
             table = "kanji" if kanji.intersection(set(token)) else "kana"
 
-            if pos.intersection({"固有名詞", "人名"}): # proper noun
+            if "人名" in pos: # name
                 words = [{
                     "id": word[0],
                     "tags": self._get_tags(word[1], jmdict=False)
@@ -98,6 +101,7 @@ class JMDict:
                 if words:
                     output.append({
                         "text": token,
+                        "pos": parts_of_speech,
                         "type": "name",
                         "words": [word for word in words]
                     })
@@ -151,12 +155,13 @@ class JMDict:
             if words:
                 output.append({
                     "text": token,
+                    "pos": parts_of_speech,
                     "type": "word",
                     "words": [word for word in words if word["common"] or not common]
                 })
                 continue
 
-            output.append({"text": token, "type": None})
+            output.append({"text": token, "pos": parts_of_speech, "type": None})
 
         return output
 
@@ -331,3 +336,4 @@ if __name__ == "__main__":
     jmdict = JMDict("jmdict.db", "jmnedict.db")
 
     output = jmdict.lookup("雛人形の顔を作ると頭師”になる事")
+    pp(output)

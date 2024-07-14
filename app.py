@@ -182,6 +182,7 @@ class PitchAccent(QtWidgets.QWidget):
             pitch_widget = QtWidgets.QLabel()
             pitch_widget.setFixedSize(10, 10)
             pitch_widget.setStyleSheet("QLabel { background-color: royalblue; border: 2px solid royalblue; border-radius: 5px; }")
+
             if pitch[1] == "low":
                 layout.addWidget(pitch_widget, 1, i, QtCore.Qt.AlignmentFlag.AlignCenter)
             else:
