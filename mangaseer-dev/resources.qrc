@@ -1,0 +1,9 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="icons">
+        <file alias="copy.svg">icons/copy.svg</file>
+        <file alias="dictionary.svg">icons/dictionary.svg</file>
+        <file alias="edit.svg">icons/edit.svg</file>
+        <file alias="tts.svg">icons/tts.svg</file>
+    </qresource>
+</RCC>

@@ -2,6 +2,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 #from ultralytics import YOLOv10
 #from manga_ocr import MangaOcr
 from utils import screenshot, tts, JMDict, KeyboardListener, get_pitch
+import resources
 
 
 class FlowLayout(QtWidgets.QLayout):
@@ -295,10 +296,10 @@ class Popup(QtWidgets.QWidget):
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setSpacing(0)
 
-        edit_button = PopupButton("icons/edit.svg")
-        tts_button = PopupButton("icons/tts.svg")
-        dictionary_button = PopupButton("icons/dictionary.svg")
-        copy_button = PopupButton("icons/copy.svg")
+        edit_button = PopupButton(":/icons/edit.svg")
+        tts_button = PopupButton(":/icons/tts.svg")
+        dictionary_button = PopupButton(":/icons/dictionary.svg")
+        copy_button = PopupButton(":/icons/copy.svg")
 
         edit_button.clicked.connect(self.edit_text)
         tts_button.clicked.connect(self.tts)
