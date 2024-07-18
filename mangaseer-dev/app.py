@@ -209,7 +209,9 @@ class DictWord(QtWidgets.QLabel):
 
         if self.readings:
             readings_widget = QtWidgets.QWidget()
+            readings_widget.setContentsMargins(0, 0, 0, 0)
             readings_layout = FlowLayout()
+            readings_layout.setContentsMargins(0, 0, 0, 0)
             readings_widget.setLayout(readings_layout)
 
             for reading in self.readings:
@@ -219,7 +221,7 @@ class DictWord(QtWidgets.QLabel):
 
             readings_item = QtWidgets.QListWidgetItem(self.info_widget)
             readings_item.setToolTip("Pitch Accent Reading")
-            readings_item.setSizeHint(readings_widget.sizeHint())
+            readings_item.setSizeHint(readings_widget.minimumSizeHint())
 
             self.info_widget.addItem(readings_item)
             self.info_widget.setItemWidget(readings_item, readings_widget)
@@ -232,6 +234,9 @@ class DictWord(QtWidgets.QLabel):
 
                 self.info_widget.addItem(word_item)
                 self.info_widget.setItemWidget(word_item, word_info)
+
+        elif self.word["type"] == "name":
+            pass # jmnedict stuff in the future (too lazy rn, srry)
 
 
 class Dictionary(QtWidgets.QDialog):
@@ -293,14 +298,15 @@ class Popup(QtWidgets.QWidget):
         edit_button = PopupButton("icons/edit.svg")
         tts_button = PopupButton("icons/tts.svg")
         dictionary_button = PopupButton("icons/dictionary.svg")
-        save_button = PopupButton("icons/save.svg")
+        copy_button = PopupButton("icons/copy.svg")
 
         edit_button.clicked.connect(self.edit_text)
         tts_button.clicked.connect(self.tts)
         dictionary_button.clicked.connect(self.dictionary)
+        copy_button.clicked.connect(self.copytext)
 
         button_layout.addWidget(edit_button, 0, 0)
-        button_layout.addWidget(save_button, 0, 1)
+        button_layout.addWidget(copy_button, 0, 1)
         button_layout.addWidget(tts_button, 1, 0)
         button_layout.addWidget(dictionary_button, 1, 1)
 
@@ -333,6 +339,11 @@ class Popup(QtWidgets.QWidget):
         dictionary = Dictionary(self, self.text)
 
         dictionary.exec()
+
+    def copytext(self):
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.clear(mode=clipboard.Mode.Clipboard)
+        clipboard.setText(self.text)
 
 
 class Overlay(QtWidgets.QWidget):

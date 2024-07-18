@@ -162,14 +162,14 @@ cython_debug/
 #.idea/
 
 # project-specific stuff
-manga_datasets/*
-weights/*
-runs/*
-*.pt
-models/*
-rendered_images/*
-tts_output.mp3
+mangaseer-dev/manga_datasets/*
+mangaseer-dev/weights/*
+mangaseer-dev/runs/*
+mangaseer-dev/*.pt
+mangaseer-dev/models/*
+mangaseer-dev/rendered_images/*
+mangaseer-dev/tts_output.mp3
 *.db
 *.db-journal
-fonts/*
-readings.json
+mangaseer-dev/fonts/*
+mangaseer-dev/readings.json
