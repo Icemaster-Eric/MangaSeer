@@ -1,0 +1,16 @@
+{
+    "助詞": ["prt", "particle"],
+    "名詞": ["n", "noun (common) (futsuumeishi)"],
+    "普通名詞": ["n", "noun (common) (futsuumeishi)"],
+    "助動詞": ["aux-v", "auxiliary verb"],
+    "動詞": ["v-unspec", "verb unspecified"],
+    "形容詞": ["adj-i", "adjective (keiyoushi)"],
+    "副詞": ["adv", "adverb (fukushi)"],
+    "代名詞": ["pn", "pronoun"],
+    "接尾辞": ["suf", "suffix"],
+    "副助詞": ["adv", "adverb (fukushi)"],
+    "接頭辞": ["pref", "prefix"],
+    "固有名詞": ["n-pr", "proper noun"],
+    "感動詞": ["int", "interjection (kandoushi)"],
+    "数詞": ["num", "numeric"]
+}

@@ -173,3 +173,5 @@ mangaseer-dev/tts_output.mp3
 *.db-journal
 mangaseer-dev/fonts/*
 mangaseer-dev/readings.json
+mangaseer/models/*
+*.ttf
