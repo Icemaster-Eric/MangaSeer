@@ -9,4 +9,5 @@ MangaSeer aims to make raw manga a viable source for any Japanese learner. If yo
 
 ## Installation
 (you will need an nvidia gpu)
+
 Git clone this repo, cd into the mangaseer folder, and install the required packages in requirements.txt. Run the app.py file, select the area for ocr, and press ctrl alt s to scan the area for Japanese text.
