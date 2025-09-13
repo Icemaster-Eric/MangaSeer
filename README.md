@@ -1,4 +1,6 @@
 # MangaSeer
+Archived as project requires an extensive process to install and is very imperfect. Use [Enso](https://github.com/Icemaster-Eric/Enso) instead.
+
 Learn Japanese by reading manga! (Demo video coming soon)
 
 ## How it works
